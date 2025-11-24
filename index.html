@@ -163,24 +163,52 @@ function exportLogs(){const csv='User,Role,Action,Timestamp\n'+activityLog.map(l
 
 /* Inventory ops */
 
-
 async function saveInv() {
-  const mode = getMode();
-localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
-
+  // persist to localStorage
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
 }
 
 async function loadInv() {
-  const mode = getMode();
   try {
-  inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-} catch {
-  inventory = [];
+    inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch (e) {
+    console.error('Failed to load inventory:', e);
+    inventory = [];
+  }
+  buildTable();
 }
-buildTable();
 
 }
-function buildTable(){const h=el('theadRow'),b=el('tbodyRows');h.innerHTML='';b.innerHTML='';FIELDS.forEach(f=>{const th=document.createElement('th');th.textContent=f;h.appendChild(th);});inventory.forEach((it,i)=>{const tr=document.createElement('tr');tr.classList.add('clickable');tr.onclick=()=>loadToForm(i);FIELDS.forEach(f=>{const td=document.createElement('td');td.textContent=it[f]||'';tr.appendChild(td);});b.appendChild(tr);});}
+function buildTable(){
+  const h = el('theadRow'), b = el('tbodyRows');
+  h.innerHTML = ''; b.innerHTML = '';
+  FIELDS.forEach(f => {
+    const th = document.createElement('th');
+    th.textContent = f;
+    h.appendChild(th);
+  });
+  if (!inventory.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = FIELDS.length;
+    td.textContent = 'No items';
+    tr.appendChild(td);
+    b.appendChild(tr);
+    return;
+  }
+  inventory.forEach((it,i) => {
+    const tr = document.createElement('tr');
+    tr.classList.add('clickable');
+    tr.onclick = () => loadToForm(i);
+    FIELDS.forEach(f => {
+      const td = document.createElement('td');
+      td.textContent = it[f] || '';
+      tr.appendChild(td);
+    });
+    b.appendChild(tr);
+  });
+}
+
 function loadToForm(i){selectedIndex=i;const it=inventory[i]||{};el('fBrand').value=it['Brand']||'';el('fModel').value=it['Model Number']||'';el('fSerial').value=it['Serial Number']||'';el('fDate').value=it['Date Received']||'';el('fLocation').value=it['Location']||'';el('fTracking').value=it['Tracking Number']||'';el('fRemarks').value=it['Remarks']||'';}
 function capture(){return {
   'Brand': (el('fBrand').value||'').toUpperCase(),
@@ -233,7 +261,25 @@ document.addEventListener('DOMContentLoaded',()=>{
   el('btnExport').onclick=exportInventoryCSV;
   el('btnImport').onclick=()=>{const f=el('fileImport').files[0];if(!f)return alert('Select CSV');importFile(f);};
   el('btnDownloadTemplate').onclick=downloadTemplate;
-  el('btnSearch').onclick=()=>{const q=el('searchBox').value.toLowerCase();const f=inventory.filter(r=>FIELDS.some(k=>(r[k]||'').toLowerCase().includes(q)));const b=el('tbodyRows');b.innerHTML='';f.forEach(it=>{const tr=document.createElement('tr');FIELDS.forEach(k=>{const td=document.createElement('td');td.textContent=it[k]||'';tr.appendChild(td);});b.appendChild(tr);});};
+  el('btnSearch').onclick = () => {
+  const q = el('searchBox').value.toLowerCase();
+  const b = el('tbodyRows');
+  b.innerHTML = '';
+  inventory.forEach((it, i) => {
+    if (FIELDS.some(k => (it[k] || '').toLowerCase().includes(q))) {
+      const tr = document.createElement('tr');
+      tr.classList.add('clickable');
+      tr.onclick = () => loadToForm(i);
+      FIELDS.forEach(k => {
+        const td = document.createElement('td');
+        td.textContent = it[k] || '';
+        tr.appendChild(td);
+      });
+      b.appendChild(tr);
+    }
+  });
+};
+  
   el('btnShowAll').onclick=buildTable;
   el('btnClearForm').onclick=clearForm; // Clears Item Details properly
   el('btnClearSearch').onclick=()=>{el('searchBox').value='';buildTable();};
@@ -245,42 +291,74 @@ async function syncInventoryToGoogle() {
   const url = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
   const sheetId = "1YaKGmumw0BFrlYNoWJhawRCTZkrUSuqeCk0dJR4H5PM";
 
+  if (!inventory.length) {
+    setActionMsg('Nothing to sync (inventory empty)');
+    return;
+  }
+
   const payload = {
     type: "inventory",
-    sheetId: sheetId,
+    sheetId,
     rows: inventory
   };
 
-  const res = await fetch(url, {
-    method: "POST",
-    body: JSON.stringify(payload),
-    headers: { "Content-Type": "application/json" }
-  });
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" }
+    });
 
-  alert(await res.text());
+    const text = await res.text();
+    if (res.ok) {
+      setActionMsg('Inventory synced to Google Sheets');
+    } else {
+      setActionMsg('Failed to sync inventory: ' + text);
+      console.error('Sync inventory failed', res.status, text);
+    }
+  } catch (err) {
+    setActionMsg('Error syncing inventory (network)');
+    console.error(err);
+  }
 }
-
 
 async function syncActivityToGoogle() {
   const url = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
   const sheetId = "1YaKGmumw0BFrlYNoWJhawRCTZkrUSuqeCk0dJR4H5PM";
 
+  if (!activityLog.length) {
+    setActionMsg('Nothing to sync (activity log empty)');
+    return;
+  }
+
   const payload = {
     type: "activity",
-    sheetId: sheetId,
+    sheetId,
     rows: activityLog
   };
 
-  const res = await fetch(url, {
-    method: "POST",
-    body: JSON.stringify(payload),
-    headers: { "Content-Type": "application/json" }
-  });
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" }
+    });
 
-  alert(await res.text());
-}
+    const text = await res.text();
+    if (res.ok) {
+      setActionMsg('Activity log synced to Google Sheets');
+    } else {
+      setActionMsg('Failed to sync activity: ' + text);
+      console.error('Sync activity failed', res.status, text);
+    }
+  } catch (err) {
+    setActionMsg('Error syncing activity (network)');
+    console.error(err);
+  }
+}  
 });
 </script>
 </body>
 </html>
+
 
