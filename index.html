@@ -87,8 +87,16 @@
         <button id="btnShowAll">Show All</button>
         <button id="btnClearSearch">Clear Search</button>
       </div>
-      <div style="margin-top:10px;">
-        <button id="btnDownloadTemplate">Download CSV Template</button>
+        <div style="margin-top:10px;">
+  <button id="btnDownloadTemplate">Download CSV Template</button>
+</div>
+
+<!-- Google Sheets sync buttons -->
+<div style="margin-top:12px; display:flex; gap:8px; flex-direction:column;">
+  <button id="btnSyncInv" class="primary">Sync Inventory to Google</button>
+  <button id="btnSyncActivity">Sync Activity Log to Google</button>
+</div>
+
       </div>
       <div class="small" style="margin-top:12px;"></div>
       <div class="small" style="margin-top:12px;">Auto-save: <strong id="autoSaveMethod">localStorage</strong></div>
@@ -229,10 +237,50 @@ document.addEventListener('DOMContentLoaded',()=>{
   el('btnShowAll').onclick=buildTable;
   el('btnClearForm').onclick=clearForm; // Clears Item Details properly
   el('btnClearSearch').onclick=()=>{el('searchBox').value='';buildTable();};
-  el('btnExportLogs').onclick=exportLogs;
+  el('btnExportLogs').onclick=exportLogs;// Google Sheets sync buttons
+  el('btnSyncInv').onclick = syncInventoryToGoogle;
+  el('btnSyncActivity').onclick = syncActivityToGoogle;
   el('btnClearLogs').onclick=()=>{if(confirm('Clear logs?')){activityLog=[];saveLogs();buildActivity();setActionMsg('Logs Cleared');}};
+async function syncInventoryToGoogle() {
+  const url = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
+  const sheetId = "1YaKGmumw0BFrlYNoWJhawRCTZkrUSuqeCk0dJR4H5PM";
 
+  const payload = {
+    type: "inventory",
+    sheetId: sheetId,
+    rows: inventory
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" }
+  });
+
+  alert(await res.text());
+}
+
+
+async function syncActivityToGoogle() {
+  const url = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
+  const sheetId = "1YaKGmumw0BFrlYNoWJhawRCTZkrUSuqeCk0dJR4H5PM";
+
+  const payload = {
+    type: "activity",
+    sheetId: sheetId,
+    rows: activityLog
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" }
+  });
+
+  alert(await res.text());
+}
 });
 </script>
 </body>
 </html>
+
