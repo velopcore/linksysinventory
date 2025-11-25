@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Linksys Inventory System (Standalone)</title>
+<title>Linksys Inventory System (Standalone + Google Sync)</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:12px; color:#111; background:#f7f8fb; }
   header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
@@ -25,7 +25,7 @@
   tr.clickable:hover { background:#f5fbff; cursor:pointer; }
   .msg { padding:8px; border-radius:6px; background:#eef7ee; border:1px solid #d5ecd6; color:#1a5b2a; margin-top:8px; }
   .hidden { display:none; }
-  footer { margin-top:14px; text-align:center; color:#666; font-size:13px; }
+  footer { margin-top:14px; text-align:center; color:#666; font-size:13px; display:none; }
 </style>
 </head>
 <body>
@@ -90,8 +90,6 @@
       <div style="margin-top:10px;">
         <button id="btnDownloadTemplate">Download CSV Template</button>
       </div>
-      <div class="small" style="margin-top:12px;"></div>
-      <div class="small" style="margin-top:12px;">Auto-save: <strong id="autoSaveMethod">localStorage</strong></div>
       <div id="actionMsg" class="msg hidden" style="margin-top:10px;"></div>
     </div>
   </div>
@@ -120,118 +118,123 @@
     </div>
     <table id="activityTable"><thead><tr><th>User</th><th>Role</th><th>Action</th><th>Timestamp</th></tr></thead><tbody id="activityBody"></tbody></table>
   </div>
-
-  <footer>Local-only app · Data saved to your selected storage</footer>
 </div>
 
 <script>
 const FIELDS = ['Brand','Model Number','Serial Number','Date Received','Location','Tracking Number','Remarks'];
 const STORAGE_KEY='linksys_inventory_v1',USER_KEY='linksys_current_user',LOG_KEY='linksys_activity_log';
+
+// --- Google Sync URL ---
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
+
 const USERS={
-  admin:{password:'admin123',role:'admin'},   // ← ADDED
+  admin:{password:'admin123',role:'admin'},
   dennis:{password:'Th3password!',role:'admin'},
   edmar:{password:'Asdfg12345!',role:'staff'},
   van:{password:'P1nkR@nger!',role:'staff'},
   viewer:{password:'ViewOnly',role:'viewer'}
 };
+
 let inventory=[],activityLog=[],currentUser=null,selectedIndex=-1;
 
-function el(i){return document.getElementById(i);}
-function show(e){e.classList.remove('hidden');}
-function hide(e){e.classList.add('hidden');}
-function now(){return new Date().toLocaleString();}
-function setActionMsg(m){const d=el('actionMsg');d.textContent=m;show(d);setTimeout(()=>hide(d),2000);}
-function dateStamp(){return new Date().toLocaleDateString('en-US').replace(/\//g,'-');}
+function el(i){return document.getElementById(i);}function show(e){e.classList.remove('hidden');}function hide(e){e.classList.add('hidden');}function now(){return new Date().toLocaleString();}
+function setActionMsg(m){const d=el('actionMsg');d.textContent=m;show(d);setTimeout(()=>hide(d),2000);}function dateStamp(){return new Date().toLocaleDateString('en-US').replace(/\//g,'-');}
 
-/* Logging */
+// ---------------- GOOGLE SYNC ----------------
+async function syncInventory(record){
+  try{
+    await fetch(SHEET_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...record,Type:'inventory'})
+    });
+  }catch(err){console.error('Inventory Sync Error:',err);}  }
+
+async function syncActivityLog(entry){
+  try{
+    await fetch(SHEET_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...entry,Type:'log'})
+    });
+  }catch(err){console.error('Log Sync Error:',err);} }
+
+// ---------------- LOGGING ----------------
 function loadLogs(){try{activityLog=JSON.parse(localStorage.getItem(LOG_KEY))||[]}catch{activityLog=[];}}
 function saveLogs(){localStorage.setItem(LOG_KEY,JSON.stringify(activityLog));}
-function logAction(a){if(!currentUser)return;const e={user:currentUser.username,role:currentUser.role,action:a,time:now()};activityLog.push(e);saveLogs();el('lastAction').textContent=`${e.user} ${e.action} at ${e.time}`;if(currentUser.role==='admin')buildActivity();}
+
+function logAction(a){
+  if(!currentUser)return;
+  const e={user:currentUser.username,role:currentUser.role,action:a,time:now()};
+  activityLog.push(e);
+  saveLogs();
+  el('lastAction').textContent=`${e.user} ${e.action} at ${e.time}`;
+  if(currentUser.role==='admin')buildActivity();
+
+  // SYNC TO GOOGLE SHEETS
+  syncActivityLog({User:e.user,Role:e.role,Action:e.action});
+}
+
 function buildActivity(){const b=el('activityBody');b.innerHTML='';activityLog.forEach(l=>{const tr=document.createElement('tr');['user','role','action','time'].forEach(k=>{const td=document.createElement('td');td.textContent=l[k];tr.appendChild(td);});b.appendChild(tr);});}
 
-/* Export with date */
+// ---------------- EXPORT ----------------
 function exportInventoryCSV(){const csv=FIELDS.join(',')+'\n'+inventory.map(r=>FIELDS.map(f=>`"${(r[f]||'').replace(/"/g,'""')}"`).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`inventory_export_${dateStamp()}.csv`;a.click();URL.revokeObjectURL(a.href);setActionMsg('Exported Inventory');logAction('exported inventory');}
 function exportLogs(){const csv='User,Role,Action,Timestamp\n'+activityLog.map(l=>`${l.user},${l.role},"${l.action}",${l.time}`).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`activity_log_${dateStamp()}.csv`;a.click();URL.revokeObjectURL(a.href);}
 
-/* Inventory ops */
+// ---------------- INVENTORY ----------------
+function saveInv(){localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}
+function loadInv(){try{inventory=JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch{inventory=[];}buildTable();}
 
-
-async function saveInv() {
-  const mode = getMode();
-localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
-
-}
-
-async function loadInv() {
-  const mode = getMode();
-  try {
-  inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-} catch {
-  inventory = [];
-}
-buildTable();
-
-}
 function buildTable(){const h=el('theadRow'),b=el('tbodyRows');h.innerHTML='';b.innerHTML='';FIELDS.forEach(f=>{const th=document.createElement('th');th.textContent=f;h.appendChild(th);});inventory.forEach((it,i)=>{const tr=document.createElement('tr');tr.classList.add('clickable');tr.onclick=()=>loadToForm(i);FIELDS.forEach(f=>{const td=document.createElement('td');td.textContent=it[f]||'';tr.appendChild(td);});b.appendChild(tr);});}
+
 function loadToForm(i){selectedIndex=i;const it=inventory[i]||{};el('fBrand').value=it['Brand']||'';el('fModel').value=it['Model Number']||'';el('fSerial').value=it['Serial Number']||'';el('fDate').value=it['Date Received']||'';el('fLocation').value=it['Location']||'';el('fTracking').value=it['Tracking Number']||'';el('fRemarks').value=it['Remarks']||'';}
+
 function capture(){return {
-  'Brand': (el('fBrand').value||'').toUpperCase(),
-  'Model Number': (el('fModel').value||'').toUpperCase(),
-  'Serial Number': (el('fSerial').value||'').toUpperCase(),
-  'Date Received': (el('fDate').value||''),
-  'Location': (el('fLocation').value||'').toUpperCase(),
-  'Tracking Number': (el('fTracking').value||'').toUpperCase(),
-  'Remarks': (el('fRemarks').value||'').toUpperCase()
+  'Brand':(el('fBrand').value||'').toUpperCase(),
+  'Model Number':(el('fModel').value||'').toUpperCase(),
+  'Serial Number':(el('fSerial').value||'').toUpperCase(),
+  'Date Received':(el('fDate').value||''),
+  'Location':(el('fLocation').value||'').toUpperCase(),
+  'Tracking Number':(el('fTracking').value||'').toUpperCase(),
+  'Remarks':(el('fRemarks').value||'').toUpperCase()
 };}
-function clearForm(){
-  el('fBrand').value='';
-  el('fModel').value='';
-  el('fSerial').value='';
-  el('fDate').value='';
-  el('fLocation').value='';
-  el('fTracking').value='';
-  el('fRemarks').value='';
-  selectedIndex=-1;
-  setActionMsg('Item Details Cleared');
-}
-function addItem(){const it=capture();if(!it.Brand)return alert('Brand required');inventory.unshift(it);saveInv();buildTable();clearForm();setActionMsg('Item Added');logAction('added item');}
-function saveItem(){if(selectedIndex<0)return alert('Select row');const it=capture();inventory[selectedIndex]=it;saveInv();buildTable();clearForm();setActionMsg('Changes Saved');logAction('saved item');}
-function delItem(){if(selectedIndex<0)return alert('Select row');if(!confirm('Remove selected?'))return;inventory.splice(selectedIndex,1);saveInv();buildTable();clearForm();setActionMsg('Item Removed');logAction('removed item');}
+
+function clearForm(){el('fBrand').value='';el('fModel').value='';el('fSerial').value='';el('fDate').value='';el('fLocation').value='';el('fTracking').value='';el('fRemarks').value='';selectedIndex=-1;setActionMsg('Item Details Cleared');}
+
+function addItem(){const it=capture();if(!it.Brand)return alert('Brand required');inventory.unshift(it);saveInv();syncInventory(it);buildTable();clearForm();setActionMsg('Item Added');logAction('added item');}
+function saveItem(){if(selectedIndex<0)return alert('Select row');const it=capture();inventory[selectedIndex]=it;saveInv();syncInventory(it);buildTable();clearForm();setActionMsg('Changes Saved');logAction('saved item');}
+function delItem(){if(selectedIndex<0)return alert('Select row');if(!confirm('Remove selected?'))return;const removed=inventory[selectedIndex];inventory.splice(selectedIndex,1);saveInv();syncInventory(removed);buildTable();clearForm();setActionMsg('Item Removed');logAction('removed item');}
+
+// --------------- IMPORT / TEMPLATE ----------------
 function importFile(f){const r=new FileReader();r.onload=e=>{const lines=e.target.result.split(/\r?\n/).filter(Boolean);let rows=[];for(let i=1;i<lines.length;i++){const p=lines[i].split(',').map(x=>x.replace(/^"|"$/g,''));const o={};FIELDS.forEach((f,j)=>o[f]=p[j]||'');rows.push(o);}inventory=rows;saveInv();buildTable();setActionMsg('Imported Inventory');logAction('imported inventory');};r.readAsText(f);}
+
 function downloadTemplate(){const b=new Blob([FIELDS.join(',')+'\n'],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='inventory_template.csv';a.click();URL.revokeObjectURL(a.href);setActionMsg('Template Downloaded');logAction('downloaded template');}
 
-/* Login + permissions */
+// ---------------- LOGIN ----------------
 function login(){const u=el('loginUser').value.trim(),p=el('loginPass').value;const rec=USERS[u];if(!rec||rec.password!==p)return alert('Invalid');currentUser={username:u,role:rec.role};localStorage.setItem(USER_KEY,JSON.stringify(currentUser));hide(el('loginBox'));show(el('app'));el('userInfo').textContent=`${u} (${rec.role})`;applyPerms();loadLogs();loadInv();buildActivity();logAction('logged in');}
 function logout(){logAction('logged out');localStorage.removeItem(USER_KEY);location.reload();}
 function applyPerms(){const r=currentUser.role;el('btnAdd').disabled=!(r==='admin'||r==='staff');el('btnSave').disabled=!(r==='admin'||r==='staff');el('btnRemove').disabled=!(r==='admin');el('btnImport').disabled=!(r==='admin');el('btnExport').disabled=!(r==='admin');r==='admin'?show(el('activityLogBox')):hide(el('activityLogBox'));}
 
-/* Init */
+// ---------------- INIT ----------------
 document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('input.upper').forEach(i=>i.addEventListener('input',()=>i.value=i.value.toUpperCase()));
 
   try{const u=JSON.parse(localStorage.getItem(USER_KEY));if(u){currentUser=u;hide(el('loginBox'));show(el('app'));el('userInfo').textContent=`${u.username} (${u.role})`;applyPerms();loadLogs();loadInv();buildActivity();}}catch{}
   el('btnLogin').onclick=login;el('btnLogout').onclick=e=>{e.preventDefault();logout();};
-  // Trigger login on Enter key
-['loginUser', 'loginPass'].forEach(id => {
-  el(id).addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault(); // prevent any default behavior
-      login();
-    }
-  });
-});
+
+  ['loginUser','loginPass'].forEach(id=>{el(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();login();}});});
 
   el('btnAdd').onclick=addItem;el('btnSave').onclick=saveItem;el('btnRemove').onclick=delItem;
   el('btnExport').onclick=exportInventoryCSV;
   el('btnImport').onclick=()=>{const f=el('fileImport').files[0];if(!f)return alert('Select CSV');importFile(f);};
   el('btnDownloadTemplate').onclick=downloadTemplate;
+
   el('btnSearch').onclick=()=>{const q=el('searchBox').value.toLowerCase();const f=inventory.filter(r=>FIELDS.some(k=>(r[k]||'').toLowerCase().includes(q)));const b=el('tbodyRows');b.innerHTML='';f.forEach(it=>{const tr=document.createElement('tr');FIELDS.forEach(k=>{const td=document.createElement('td');td.textContent=it[k]||'';tr.appendChild(td);});b.appendChild(tr);});};
   el('btnShowAll').onclick=buildTable;
-  el('btnClearForm').onclick=clearForm; // Clears Item Details properly
+  el('btnClearForm').onclick=clearForm;
   el('btnClearSearch').onclick=()=>{el('searchBox').value='';buildTable();};
   el('btnExportLogs').onclick=exportLogs;
   el('btnClearLogs').onclick=()=>{if(confirm('Clear logs?')){activityLog=[];saveLogs();buildActivity();setActionMsg('Logs Cleared');}};
-
 });
 </script>
 </body>
