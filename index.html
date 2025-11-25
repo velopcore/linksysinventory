@@ -102,7 +102,7 @@
       </div>
 
       <div class="small" style="margin-top:12px;"></div>
-      <div class="small" style="margin-top:12px;">Auto-save: <strong id="autoSaveMethod">localStorage</strong></div>
+      <div class="small" style="margin-top:12px;">Auto-save: <strong id="autoSaveMethod">localStorage + Google Sync</strong></div>
       <div id="actionMsg" class="msg hidden" style="margin-top:10px;"></div>
       <div class="notice">Note: Google sync uses the Apps Script Web App you deployed. Make sure it is deployed with appropriate access.</div>
     </div>
@@ -133,7 +133,7 @@
     <table id="activityTable"><thead><tr><th>User</th><th>Role</th><th>Action</th><th>Timestamp</th></tr></thead><tbody id="activityBody"></tbody></table>
   </div>
 
-  <footer>Local-only app · Data saved to your selected storage · Google sync available</footer>
+  <footer>Local-only app · Data saved to your selected storage · Google sync active</footer>
 </div>
 
 <script>
@@ -145,7 +145,7 @@ const STORAGE_KEY = 'linksys_inventory_v1';
 const USER_KEY = 'linksys_current_user';
 const LOG_KEY = 'linksys_activity_log';
 
-// YOUR confirmed Apps Script Web App URL and Spreadsheet ID (embedded as requested)
+// Embedded values you confirmed earlier
 const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
 const GOOGLE_SPREADSHEET_ID = "1YaKGmumw0BFrlYNoWJhawRCTZkrUSuqeCk0dJR4H5PM";
 
@@ -197,7 +197,6 @@ function logAction(action) {
   activityLog.push(entry);
   saveLogs();
   el('lastAction').textContent = `${entry.user} ${entry.action} at ${entry.time}`;
-  // Only admins see the activity table but we still persist the log
   if (currentUser.role === 'admin') buildActivity();
 }
 function buildActivity() {
@@ -274,9 +273,9 @@ function clearForm() {
 }
 
 /* ---------------------------
-   Inventory operations
+   Inventory operations (with auto-sync hooks)
    --------------------------- */
-function addItem() {
+async function addItem() {
   const it = capture();
   if (!it.Brand) return alert('Brand required');
   inventory.unshift(it);
@@ -285,9 +284,10 @@ function addItem() {
   clearForm();
   setActionMsg('Item Added');
   logAction('added item');
+  await autoSyncAll(); // AUTO-SYNC
 }
 
-function saveItem() {
+async function saveItem() {
   if (selectedIndex < 0) return alert('Select row');
   const it = capture();
   inventory[selectedIndex] = it;
@@ -296,9 +296,10 @@ function saveItem() {
   clearForm();
   setActionMsg('Changes Saved');
   logAction('saved item');
+  await autoSyncAll(); // AUTO-SYNC
 }
 
-function delItem() {
+async function delItem() {
   if (selectedIndex < 0) return alert('Select row');
   if (!confirm('Remove selected?')) return;
   inventory.splice(selectedIndex, 1);
@@ -307,6 +308,7 @@ function delItem() {
   clearForm();
   setActionMsg('Item Removed');
   logAction('removed item');
+  await autoSyncAll(); // AUTO-SYNC
 }
 
 /* ---------------------------
@@ -353,6 +355,8 @@ function importFile(f) {
     buildTable();
     setActionMsg('Imported Inventory');
     logAction('imported inventory');
+    // auto-sync after import
+    autoSyncAll();
   };
   r.readAsText(f);
 }
@@ -369,12 +373,31 @@ function downloadTemplate() {
 }
 
 /* ---------------------------
+   Auto-sync wrapper & schedule
+   --------------------------- */
+async function autoSyncAll() {
+  // run inventory sync then activity sync, but don't throw on errors
+  try {
+    await syncInventoryToGoogle();
+  } catch (e) {
+    console.warn("Auto-sync inventory failed:", e);
+  }
+  try {
+    await syncActivityToGoogle();
+  } catch (e) {
+    console.warn("Auto-sync activity failed:", e);
+  }
+  // optional: small UI update (timestamp)
+  console.log("Auto-sync attempt:", new Date().toLocaleString());
+}
+
+/* ---------------------------
    Google Sheets sync functions
    --------------------------- */
 async function syncInventoryToGoogle() {
   if (!inventory.length) {
-    setActionMsg('Nothing to sync (inventory empty)');
-    return;
+    // If no items, we may still want to clear the sheet depending on design.
+    // For now, we still call the API with an empty array so the sheet is cleared server-side.
   }
   const payload = { type: 'inventory', sheetId: GOOGLE_SPREADSHEET_ID, rows: inventory };
   try {
@@ -388,20 +411,18 @@ async function syncInventoryToGoogle() {
       setActionMsg('Inventory synced to Google Sheets');
       logAction('synced inventory to google');
     } else {
-      setActionMsg('Failed to sync inventory: ' + text);
+      setActionMsg('Failed to sync inventory: ' + (text || res.status));
       console.error('Sync inventory failed', res.status, text);
     }
+    return res;
   } catch (err) {
     setActionMsg('Error syncing inventory (network)');
-    console.error(err);
+    console.error('Network or fetch error (inventory):', err);
+    throw err;
   }
 }
 
 async function syncActivityToGoogle() {
-  if (!activityLog.length) {
-    setActionMsg('Nothing to sync (activity log empty)');
-    return;
-  }
   const payload = { type: 'activity', sheetId: GOOGLE_SPREADSHEET_ID, rows: activityLog };
   try {
     const res = await fetch(GOOGLE_WEBAPP_URL, {
@@ -414,19 +435,21 @@ async function syncActivityToGoogle() {
       setActionMsg('Activity log synced to Google Sheets');
       logAction('synced activity to google');
     } else {
-      setActionMsg('Failed to sync activity: ' + text);
+      setActionMsg('Failed to sync activity: ' + (text || res.status));
       console.error('Sync activity failed', res.status, text);
     }
+    return res;
   } catch (err) {
     setActionMsg('Error syncing activity (network)');
-    console.error(err);
+    console.error('Network or fetch error (activity):', err);
+    throw err;
   }
 }
 
 /* ---------------------------
    Login & permissions
    --------------------------- */
-function login() {
+async function login() {
   const u = el('loginUser').value.trim();
   const p = el('loginPass').value;
   const rec = USERS[u];
@@ -441,12 +464,25 @@ function login() {
   loadInv();
   buildActivity();
   logAction('logged in');
+  try {
+    // Immediately sync logs/inventory after login (optional)
+    await autoSyncAll();
+  } catch (e) {
+    console.warn('Initial sync after login failed:', e);
+  }
 }
 
-function logout() {
+async function logout(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  try {
+    await autoSyncAll(); // sync before logging out
+  } catch (err) {
+    console.warn('Auto-sync before logout failed:', err);
+  }
   logAction('logged out');
   localStorage.removeItem(USER_KEY);
-  location.reload();
+  // slight delay so last log action can be saved (and synced)
+  setTimeout(() => location.reload(), 200);
 }
 
 function applyPerms() {
@@ -482,8 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch (err) { /* ignore */ }
 
   // Button wiring
-  el('btnLogin').onclick = login;
-  el('btnLogout').onclick = e => { e.preventDefault(); logout(); };
+  el('btnLogin').onclick = () => login();
+  el('btnLogout').onclick = (e) => logout(e);
+  el('btnQuit').onclick = () => { window.close && window.close(); };
+
   ['loginUser', 'loginPass'].forEach(id => {
     el(id).addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); login(); }
@@ -491,9 +529,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Item actions
-  el('btnAdd').onclick = addItem;
-  el('btnSave').onclick = saveItem;
-  el('btnRemove').onclick = delItem;
+  el('btnAdd').onclick = () => addItem();
+  el('btnSave').onclick = () => saveItem();
+  el('btnRemove').onclick = () => delItem();
   el('btnClearForm').onclick = clearForm;
 
   // Import / Export
@@ -529,18 +567,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Activity log controls
   el('btnExportLogs').onclick = exportLogs;
-  el('btnClearLogs').onclick = () => {
+  el('btnClearLogs').onclick = async () => {
     if (confirm('Clear logs?')) {
       activityLog = [];
       saveLogs();
       buildActivity();
       setActionMsg('Logs Cleared');
+      await autoSyncAll(); // AUTO-SYNC on clear
     }
   };
 
   // Google sync buttons
-  el('btnSyncInv').onclick = syncInventoryToGoogle;
-  el('btnSyncActivity').onclick = syncActivityToGoogle;
+  el('btnSyncInv').onclick = () => syncInventoryToGoogle();
+  el('btnSyncActivity').onclick = () => syncActivityToGoogle();
+
+  // Background auto-sync every 60 seconds
+  setInterval(() => {
+    autoSyncAll().catch(err => console.warn('Background auto-sync error:', err));
+  }, 60000);
 
   // Load initial data
   loadLogs();
