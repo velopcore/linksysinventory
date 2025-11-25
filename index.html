@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Linksys Inventory System (Standalone)</title>
+<title>Linksys Inventory System (Google Sheets Primary)</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:12px; color:#111; background:#f7f8fb; }
   header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
@@ -95,15 +95,10 @@
         <button id="btnDownloadTemplate">Download CSV Template</button>
       </div>
 
-            <div style="margin-top:12px; display:flex; gap:8px; flex-direction:column;">
-        <button id="btnSyncInv" class="primary">Sync Inventory to Google</button>
-        <button id="btnSyncActivity">Sync Activity Log to Google</button>
-      </div>
-
-      <div class="small" style="margin-top:12px;"></div>
-      <div class="small" style="margin-top:12px;">Auto-save: <strong id="autoSaveMethod">localStorage + Google Sync</strong></div>
+            <div class="small" style="margin-top:12px;"></div>
+      <div class="small" style="margin-top:12px;">Data Source: <strong id="autoSaveMethod">Google Sheets (Automatic Sync)</strong></div>
       <div id="actionMsg" class="msg hidden" style="margin-top:10px;"></div>
-      <div class="notice">Note: Google sync uses the Apps Script Web App you deployed. Make sure it is deployed with appropriate access.</div>
+      <div class="notice">Note: Data is loaded from and saved directly to Google Sheets using the Apps Script Web App.</div>
     </div>
   </div>
 
@@ -132,7 +127,7 @@
     <table id="activityTable"><thead><tr><th>User</th><th>Role</th><th>Action</th><th>Timestamp</th></tr></thead><tbody id="activityBody"></tbody></table>
   </div>
 
-  <footer>Local-only app · Data saved to your selected storage · Google sync active</footer>
+  <footer>Data saved to Google Sheets · Local copy no longer maintained</footer>
 </div>
 
 <script>
@@ -140,9 +135,9 @@
    Configuration & constants
    --------------------------- */
 const FIELDS = ['Brand','Model Number','Serial Number','Date Received','Location','Tracking Number','Remarks'];
-const STORAGE_KEY = 'linksys_inventory_v1';
-const USER_KEY = 'linksys_current_user';
-const LOG_KEY = 'linksys_activity_log';
+// REMOVED: STORAGE_KEY (localStorage)
+// REMOVED: LOG_KEY (localStorage)
+const USER_KEY = 'linksys_current_user'; // Keeping for login persistence
 
 // Embedded values you confirmed earlier
 const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
@@ -158,7 +153,7 @@ const USERS = {
 };
 
 let inventory = [], activityLog = [], currentUser = null, selectedIndex = -1;
-let displayedInventory = []; // <-- NEW: Array holding the currently visible items (full list or search results)
+let displayedInventory = []; // Array holding the currently visible items (full list or search results)
 
 /* ---------------------------
    Small helpers
@@ -176,33 +171,58 @@ function setActionMsg(msg, timeout = 2500) {
 }
 
 /* ---------------------------
-   Persistence: localStorage
+   Persistence: Google Sheets Fetch/Update
    --------------------------- */
-function saveLogs() { localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); }
-function loadLogs() {
-  try { activityLog = JSON.parse(localStorage.getItem(LOG_KEY)) || []; } catch { activityLog = []; }
+// REMOVED: saveLogs, loadLogs, saveInv, loadInv
+
+// NEW: Function to fetch all data from Google Sheets
+async function loadDataFromGoogle() {
+    setActionMsg('Loading data from Google Sheets...');
+    const payload = { type: 'fetch_all', sheetId: GOOGLE_SPREADSHEET_ID };
+    try {
+        const res = await fetch(GOOGLE_WEBAPP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        
+        if (res.ok && json.success) {
+            inventory = json.inventory || [];
+            activityLog = json.activity || [];
+            buildTable();
+            buildActivity();
+            setActionMsg('Data loaded successfully from Google Sheets');
+        } else {
+            setActionMsg('Failed to load data from Google Sheets: ' + (json.error || 'Unknown error'));
+            console.error('Fetch data failed', json);
+        }
+    } catch (err) {
+        setActionMsg('Network error while fetching data.');
+        console.error('Network or fetch error:', err);
+    }
 }
-function saveInv() { localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
-function loadInv() {
-  try { inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { inventory = []; }
-  buildTable(); // Call the main table builder which defaults to showing all
-}
+
 
 /* ---------------------------
    Activity logging
    --------------------------- */
-function logAction(action) {
+async function logAction(action) {
   if (!currentUser) return;
   const entry = { user: currentUser.username, role: currentUser.role, action, time: now() };
   activityLog.push(entry);
-  saveLogs();
   el('lastAction').textContent = `${entry.user} ${entry.action} at ${entry.time}`;
   if (currentUser.role === 'admin') buildActivity();
+  
+  // Trigger immediate activity sync after logging a new action
+  await syncActivityToGoogle();
 }
+
 function buildActivity() {
   const body = el('activityBody');
   body.innerHTML = '';
-  activityLog.forEach(l => {
+  // Show logs newest first
+  [...activityLog].reverse().forEach(l => { 
     const tr = document.createElement('tr');
     ['user','role','action','time'].forEach(k => {
       const td = document.createElement('td');
@@ -216,20 +236,16 @@ function buildActivity() {
 /* ---------------------------
    Table rendering & form
    --------------------------- */
-// Builds the header and populates displayedInventory with the full list.
 function buildTable() {
-  // Default: show the full inventory
   displayedInventory = inventory; 
   
   const h = el('theadRow');
   h.innerHTML = ''; 
   FIELDS.forEach(f => { const th = document.createElement('th'); th.textContent = f; h.appendChild(th); });
   
-  // Now build the body using the displayed array
   buildTableFromDisplayed(); 
 }
 
-// Helper to render the table body based on the current contents of displayedInventory
 function buildTableFromDisplayed() {
   const b = el('tbodyRows');
   b.innerHTML = ''; 
@@ -247,7 +263,6 @@ function buildTableFromDisplayed() {
   displayedInventory.forEach((it, i) => {
     const tr = document.createElement('tr');
     tr.classList.add('clickable');
-    // FIX: loadToForm now uses the index 'i' in the displayedInventory array.
     tr.onclick = () => loadToForm(i); 
     FIELDS.forEach(f => {
       const td = document.createElement('td');
@@ -258,11 +273,8 @@ function buildTableFromDisplayed() {
   });
 }
 
-
-// loads an item from the current displayed list (full list or search result)
 function loadToForm(i) {
   selectedIndex = i;
-  // FIX: Get the item from the currently displayed list
   const it = displayedInventory[i] || {}; 
   el('fBrand').value = it['Brand'] || '';
   el('fModel').value = it['Model Number'] || '';
@@ -296,36 +308,36 @@ function clearForm() {
    --------------------------- */
 async function addItem() {
   const it = capture();
-  if (!it.Brand) return alert('Brand required');
+  if (!it['Brand'] || !it['Serial Number']) return alert('Brand and Serial Number required');
+  
+  // Check for duplicates before adding
+  if (inventory.some(item => item['Serial Number'] === it['Serial Number'])) {
+    return alert('Error: Serial Number already exists in the inventory.');
+  }
+  
   inventory.unshift(it);
-  saveInv();
-  buildTable(); // Rebuilds table (shows all)
+  setActionMsg('Item Added. Syncing...');
+  logAction('added item'); // logAction will trigger activity sync
+  await syncInventoryToGoogle();
+  // Reload data from Google after sync to ensure local copy matches sheet and includes any server side updates
+  await loadDataFromGoogle(); 
   clearForm();
-  setActionMsg('Item Added');
-  logAction('added item');
-  await autoSyncAll(); 
 }
 
 async function saveItem() {
   if (selectedIndex < 0) return alert('Select row');
   const it = capture();
-  // NOTE: This uses the index in displayedInventory, which only works 
-  // because we are *not* filtering when adding/saving/deleting. 
-  // To make this robust, we need to find the item in the full 'inventory' array 
-  // based on a unique ID (like Serial Number), but we'll stick to the index for simplicity.
   
-  // Find the item's original index in the full inventory list by comparing serial numbers (or better yet, a hidden ID)
   const serialToFind = displayedInventory[selectedIndex]['Serial Number'];
   const originalIndex = inventory.findIndex(item => item['Serial Number'] === serialToFind);
   
   if (originalIndex > -1) {
     inventory[originalIndex] = it;
-    saveInv();
-    buildTable();
-    clearForm();
-    setActionMsg('Changes Saved');
+    setActionMsg('Changes Saved. Syncing...');
     logAction('saved item');
-    await autoSyncAll(); 
+    await syncInventoryToGoogle();
+    await loadDataFromGoogle(); 
+    clearForm();
   } else {
     setActionMsg('Error: Item not found in main inventory.');
   }
@@ -335,18 +347,16 @@ async function delItem() {
   if (selectedIndex < 0) return alert('Select row');
   if (!confirm('Remove selected?')) return;
   
-  // Find the item's original index in the full inventory list
   const serialToFind = displayedInventory[selectedIndex]['Serial Number'];
   const originalIndex = inventory.findIndex(item => item['Serial Number'] === serialToFind);
   
   if (originalIndex > -1) {
     inventory.splice(originalIndex, 1);
-    saveInv();
-    buildTable();
-    clearForm();
-    setActionMsg('Item Removed');
+    setActionMsg('Item Removed. Syncing...');
     logAction('removed item');
-    await autoSyncAll();
+    await syncInventoryToGoogle();
+    await loadDataFromGoogle();
+    clearForm();
   } else {
     setActionMsg('Error: Item not found in main inventory for removal.');
   }
@@ -379,30 +389,25 @@ function exportLogs() {
   logAction('exported logs');
 }
 
-/* Simple CSV import (naive — does not fully support quoted CSV with embedded newlines) */
-function importFile(f) {
+/* Simple CSV import (naive) */
+async function importFile(f) {
   const r = new FileReader();
-  r.onload = e => {
+  r.onload = async e => {
     const lines = e.target.result.split(/\r?\n/).filter(Boolean);
     const rows = [];
-    // Check for header row
-    const headers = lines.length > 0 ? lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '')) : [];
     
     for (let i = 1; i < lines.length; i++) {
-      // Naive split: assume fields do not contain commas
       const p = lines[i].split(',').map(x => x.trim().replace(/^"|"$/g, ''));
       const o = {};
-      // Map CSV columns to expected FIELDS, using positional index
       FIELDS.forEach((f, j) => o[f] = p[j] || '');
       rows.push(o);
     }
     inventory = rows;
-    saveInv();
-    buildTable();
-    setActionMsg('Imported Inventory');
+    
+    setActionMsg('Imported Inventory locally. Syncing to Google Sheets...');
     logAction('imported inventory');
-    // auto-sync after import
-    autoSyncAll();
+    await syncInventoryToGoogle();
+    await loadDataFromGoogle(); // Refresh UI with what Google Sheets now holds
   };
   r.readAsText(f);
 }
@@ -419,24 +424,6 @@ function downloadTemplate() {
 }
 
 /* ---------------------------
-   Auto-sync wrapper & schedule
-   --------------------------- */
-async function autoSyncAll() {
-  // run inventory sync then activity sync, but don't throw on errors
-  try {
-    await syncInventoryToGoogle();
-  } catch (e) {
-    console.warn("Auto-sync inventory failed:", e);
-  }
-  try {
-    await syncActivityToGoogle();
-  } catch (e) {
-    console.warn("Auto-sync activity failed:", e);
-  }
-  console.log("Auto-sync attempt:", new Date().toLocaleString());
-}
-
-/* ---------------------------
    Google Sheets sync functions
    --------------------------- */
 async function syncInventoryToGoogle() {
@@ -450,7 +437,6 @@ async function syncInventoryToGoogle() {
     const text = await res.text();
     if (res.ok) {
       setActionMsg('Inventory synced to Google Sheets');
-      logAction('synced inventory to google');
     } else {
       setActionMsg('Failed to sync inventory: ' + (text || res.status));
       console.error('Sync inventory failed', res.status, text);
@@ -474,7 +460,6 @@ async function syncActivityToGoogle() {
     const text = await res.text();
     if (res.ok) {
       setActionMsg('Activity log synced to Google Sheets');
-      logAction('synced activity to google');
     } else {
       setActionMsg('Failed to sync activity: ' + (text || res.status));
       console.error('Sync activity failed', res.status, text);
@@ -486,6 +471,7 @@ async function syncActivityToGoogle() {
     throw err;
   }
 }
+
 
 /* ---------------------------
    Login & permissions
@@ -507,28 +493,18 @@ async function login() {
   show(el('app'));
   el('userInfo').textContent = `${u} (${rec.role})`;
   applyPerms();
-  loadLogs();
-  loadInv();
-  buildActivity();
+  
+  // NEW: Load data from Google Sheets immediately after successful login
+  await loadDataFromGoogle();
   logAction('logged in');
-  try {
-    // Immediately sync logs/inventory after login (optional)
-    await autoSyncAll();
-  } catch (e) {
-    console.warn('Initial sync after login failed:', e);
-  }
 }
 
 async function logout(e) {
   if (e && e.preventDefault) e.preventDefault();
-  try {
-    await autoSyncAll(); // sync before logging out
-  } catch (err) {
-    console.warn('Auto-sync before logout failed:', err);
-  }
+  
+  // Removed pre-logout sync, as all actions are synced immediately now
   logAction('logged out');
   localStorage.removeItem(USER_KEY);
-  // slight delay so last log action can be saved (and synced)
   setTimeout(() => location.reload(), 200);
 }
 
@@ -548,7 +524,11 @@ function applyPerms() {
 document.addEventListener('DOMContentLoaded', () => {
   // Uppercase inputs behavior
   document.querySelectorAll('input.upper').forEach(i => i.addEventListener('input', () => i.value = i.value.toUpperCase()));
-
+  
+  // Clear old localStorage keys to ensure system moves to Google Sheets primary storage
+  // localStorage.removeItem('linksys_inventory_v1');
+  // localStorage.removeItem('linksys_activity_log');
+  
   // Restore logged in user (if any)
   try {
     const u = JSON.parse(localStorage.getItem(USER_KEY));
@@ -558,9 +538,9 @@ document.addEventListener('DOMContentLoaded', () => {
       show(el('app'));
       el('userInfo').textContent = `${u.username} (${u.role})`;
       applyPerms();
-      loadLogs();
-      loadInv();
-      buildActivity();
+      
+      // If user is restored, load data immediately
+      loadDataFromGoogle();
     }
   } catch (err) { /* ignore */ }
 
@@ -594,48 +574,41 @@ document.addEventListener('DOMContentLoaded', () => {
   el('btnSearch').onclick = () => {
     const q = el('searchBox').value.toLowerCase().trim();
     
-    // FIX: Filter the full inventory to create the new displayed list
     displayedInventory = inventory.filter(it => 
       !q || FIELDS.some(k => (it[k] || '').toLowerCase().includes(q))
     );
     
-    // FIX: Rebuild the table using the filtered (displayedInventory) data
     buildTableFromDisplayed(); 
     setActionMsg(`Found ${displayedInventory.length} items.`);
   };
   
-  el('btnShowAll').onclick = buildTable; // buildTable() resets displayedInventory and calls buildTableFromDisplayed()
+  el('btnShowAll').onclick = buildTable; 
   el('btnClearSearch').onclick = () => { el('searchBox').value = ''; buildTable(); };
 
   // Activity log controls
   el('btnExportLogs').onclick = exportLogs;
   el('btnClearLogs').onclick = async () => {
-    if (confirm('Clear logs?')) {
+    if (confirm('Clear logs? This will permanently remove all logs from Google Sheets.')) {
       activityLog = [];
-      saveLogs();
-      buildActivity();
-      setActionMsg('Logs Cleared');
-      await autoSyncAll(); // AUTO-SYNC on clear
+      setActionMsg('Logs Cleared locally. Syncing...');
+      logAction('cleared activity log'); // Log this action before clearing!
+      
+      // The syncActivityToGoogle call inside logAction() handles clearing the sheet.
+      // We will now refresh the UI to ensure the logs are empty.
+      buildActivity(); 
     }
   };
 
-  // Google sync buttons
-  el('btnSyncInv').onclick = () => syncInventoryToGoogle();
-  el('btnSyncActivity').onclick = () => syncActivityToGoogle();
+  // Removed Google sync buttons
 
-  // Background auto-sync every 60 seconds
-  setInterval(() => {
-    autoSyncAll().catch(err => console.warn('Background auto-sync error:', err));
+  // Background data refresh every 60 seconds (replaces auto-sync)
+  setInterval(async () => {
+    if (currentUser) {
+      console.log('Background data refresh...');
+      // Note: This refreshes the local copy (inventory, activityLog) with the sheet data
+      await loadDataFromGoogle().catch(err => console.warn('Background refresh error:', err));
+    }
   }, 60000);
-
-  // Load initial data
-  // These calls are placed here to ensure they run even if the user isn't logged in yet, 
-  // but they will be re-run on successful login as part of the setup.
-  if (!currentUser) {
-    loadLogs();
-    loadInv();
-    buildActivity();
-  }
 });
 </script>
 </body>
