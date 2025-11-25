@@ -1,597 +1,171 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Linksys Inventory System (Standalone)</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Linksys Inventory — AutoSync</title>
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:12px; color:#111; background:#f7f8fb; }
-  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-  h1 { font-size:18px; margin:0; }
-  .login-box, .app { border:1px solid #ddd; border-radius:8px; padding:12px; max-width:1100px; margin:0 auto; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.04); }
-  .container { display:flex; gap:12px; }
-  .left { flex:2; padding:10px; border:1px solid #eee; border-radius:6px; background:#fff; }
-  .right { flex:1; padding:10px; border:1px solid #eee; border-radius:6px; background:#fff; }
-  .bottom, .activity { margin-top:12px; padding:8px; border:1px solid #eee; border-radius:6px; background:#fff; }
-  label { display:block; font-weight:600; margin-top:8px; font-size:13px; }
-  input[type="text"], input[type="password"], input[type="file"], select { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; font-size:13px; }
-  button { padding:8px 12px; margin-top:8px; border-radius:6px; border:1px solid #aaa; background:#f6f6f6; cursor:pointer; font-size:13px; }
-  button.primary { background:#0366d6; color:#fff; border-color:#0366d6; }
-  button.warn { background:#ffefef; color:#a10000; border-color:#f5c2c2; }
-  .small { font-size:12px; color:#666; margin-top:6px; }
-  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:13px; background:#fff; }
-  th, td { border:1px solid #e6e6e6; padding:6px; text-align:left; vertical-align:top; }
-  th { background:#fafafa; font-weight:700; }
-  tr.clickable:hover { background:#f5fbff; cursor:pointer; }
-  .msg { padding:8px; border-radius:6px; background:#eef7ee; border:1px solid #d5ecd6; color:#1a5b2a; margin-top:8px; }
-  .hidden { display:none; }
-  footer { margin-top:14px; text-align:center; color:#666; font-size:13px; }
-  .notice { padding:8px; border-radius:6px; background:#fff8e6; border:1px solid #f1e0b3; color:#7a5b00; margin-top:8px; }
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:14px;background:#f7f8fb;color:#111}
+  .card{max-width:1100px;margin:0 auto;background:#fff;padding:12px;border-radius:8px;border:1px solid #e6e6e6}
+  header{display:flex;justify-content:space-between;align-items:center}
+  h1{font-size:18px;margin:0}
+  .row{display:flex;gap:12px}
+  .left{flex:2;padding:10px}
+  .right{flex:1;padding:10px}
+  label{display:block;font-weight:600;margin-top:8px}
+  input[type=text]{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc}
+  button{padding:8px 12px;border-radius:6px;border:1px solid #aaa;background:#f6f6f6;cursor:pointer}
+  button.primary{background:#0366d6;color:#fff;border-color:#0366d6}
+  button.warn{background:#ffefef;color:#a10000;border-color:#f5c2c2}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid #e6e6e6;padding:6px;text-align:left}
+  tr.clickable:hover{background:#f5fbff;cursor:pointer}
+  .msg{padding:8px;border-radius:6px;background:#eef7ee;border:1px solid #d5ecd6;color:#1a5b2a;margin-top:8px}
+  .small{font-size:13px;color:#666}
+  .hidden{display:none}
+  footer{margin-top:14px;text-align:center;color:#666}
 </style>
 </head>
 <body>
+  <div class="card" id="appCard">
+    <header><h1>Linksys Inventory — AutoSync</h1>
+      <div><span id="userInfo" class="small"></span> | <a href="#" id="btnLogout">Logout</a></div>
+    </header>
 
-<div class="login-box" id="loginBox">
-  <h1>🔐 Linksys Inventory — Login</h1>
-  <div style="max-width:480px;margin-top:12px;">
-    <label>Username</label>
-    <input type="text" id="loginUser" autocomplete="username">
-    <label>Password</label>
-    <input type="password" id="loginPass" autocomplete="current-password">
-    <div style="margin-top:10px;">
-      <button id="btnLogin" class="primary">Login</button>
-      <button id="btnQuit">Quit</button>
-    </div>
-    <div class="small" style="margin-top:8px;">Users: admin / dennis / edmar / van / viewer</div>
-    <div id="loginMsg" class="msg hidden" style="margin-top:10px;"></div>
-  </div>
-</div>
+    <div class="row" style="margin-top:12px">
+      <div class="left">
+        <label>Brand</label><input id="fBrand" type="text" class="upper">
+        <label>Model Number</label><input id="fModel" type="text" class="upper">
+        <label>Serial Number</label><input id="fSerial" type="text" class="upper">
+        <label>Date Received</label><input id="fDate" type="text" placeholder="MM/DD/YYYY">
+        <label>Location</label><input id="fLocation" type="text" class="upper">
+        <label>Tracking Number</label><input id="fTracking" type="text" class="upper">
+        <label>Remarks</label><input id="fRemarks" type="text" class="upper">
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button id="btnClear">Clear</button>
+          <button id="btnAdd" class="primary">Add</button>
+          <button id="btnSave">Save</button>
+          <button id="btnRemove" class="warn">Remove</button>
+        </div>
+      </div>
 
-<div class="app hidden" id="app">
-  <header>
-    <div><strong>Linksys Inventory System</strong></div>
-    <div>
-      <span id="userInfo" class="small"></span> | <a href="#" id="btnLogout">Logout</a>
-    </div>
-  </header>
-
-  <div class="container">
-    <div class="left">
-      <h3>🧾 Item Details</h3>
-      <label>Brand</label><input type="text" id="fBrand" class="upper">
-      <label>Model Number</label><input type="text" id="fModel" class="upper">
-      <label>Serial Number</label><input type="text" id="fSerial" class="upper">
-      <label>Date Received (MM/DD/YYYY)</label><input type="text" id="fDate" placeholder="MM/DD/YYYY">
-      <label>Location</label><input type="text" id="fLocation" class="upper">
-      <label>Tracking Number</label><input type="text" id="fTracking" class="upper">
-      <label>Remarks</label><input type="text" id="fRemarks" class="upper">
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button id="btnClearForm">Clear Item Details</button>
-        <button id="btnAdd" class="primary">Add Item</button>
-        <button id="btnSave">Save Changes</button>
-        <button id="btnRemove" class="warn">Remove Item</button>
+      <div class="right">
+        <div class="small">Auto-sync is ON (Inventory + ActivityLog)</div>
+        <div id="syncStatus" class="msg hidden" style="margin-top:8px"></div>
+        <div style="margin-top:12px" id="lastSynced">Last sync: —</div>
       </div>
     </div>
 
-    <div class="right">
-      <h3>⚙️ Actions</h3>
-      <hr>
-      <label>Import/Export</label>
-      <input type="file" id="fileImport" accept=".csv">
-      <div style="margin-top:6px;">
-        <button id="btnImport">Import</button>
-        <button id="btnExport">Export</button>
-      </div>
-      <hr>
-      <label>Search</label>
-      <input type="text" id="searchBox" placeholder="keyword...">
-      <div style="margin-top:6px;display:flex;gap:8px;">
-        <button id="btnSearch">Search</button>
-        <button id="btnShowAll">Show All</button>
-        <button id="btnClearSearch">Clear Search</button>
-      </div>
-
-      <div style="margin-top:10px;">
-        <button id="btnDownloadTemplate">Download CSV Template</button>
-      </div>
-
-      <!-- Google Sheets sync buttons -->
-      <div style="margin-top:12px; display:flex; gap:8px; flex-direction:column;">
-        <button id="btnSyncInv" class="primary">Sync Inventory to Google</button>
-        <button id="btnSyncActivity">Sync Activity Log to Google</button>
-      </div>
-
-      <div class="small" style="margin-top:12px;"></div>
-      <div class="small" style="margin-top:12px;">Auto-save: <strong id="autoSaveMethod">localStorage + Google Sync</strong></div>
-      <div id="actionMsg" class="msg hidden" style="margin-top:10px;"></div>
-      <div class="notice">Note: Google sync uses the Apps Script Web App you deployed. Make sure it is deployed with appropriate access.</div>
+    <hr>
+    <h3>Inventory</h3>
+    <div style="overflow:auto">
+      <table id="invTable"><thead><tr id="theadRow"></tr></thead><tbody id="tbodyRows"></tbody></table>
     </div>
-  </div>
+    <div class="small" style="margin-top:8px">Click a row to load into form.</div>
 
-  <div class="bottom">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h3>📋 Inventory Table</h3>
-      <div class="small">Last Action: <span id="lastAction">—</span></div>
-    </div>
-    <div id="tableWrap" style="overflow:auto;">
-      <table id="invTable" role="table">
-        <thead><tr id="theadRow"></tr></thead>
-        <tbody id="tbodyRows"></tbody>
-      </table>
-    </div>
-    <div class="small">Click a row to load it into the form.</div>
-  </div>
-
-  <div class="activity hidden" id="activityLogBox">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h3>🕓 Activity Log</h3>
-      <div>
-        <button id="btnExportLogs">Export Logs (CSV)</button>
-        <button id="btnClearLogs" class="warn">Clear Logs</button>
-      </div>
-    </div>
+    <hr>
+    <h3>Activity Log</h3>
     <table id="activityTable"><thead><tr><th>User</th><th>Role</th><th>Action</th><th>Timestamp</th></tr></thead><tbody id="activityBody"></tbody></table>
-  </div>
 
-  <footer>Local-only app · Data saved to your selected storage · Google sync active</footer>
-</div>
+    <footer>Local storage + Auto Google Sheets Sync</footer>
+  </div>
 
 <script>
-/* ---------------------------
-   Configuration & constants
-   --------------------------- */
-const FIELDS = ['Brand','Model Number','Serial Number','Date Received','Location','Tracking Number','Remarks'];
-const STORAGE_KEY = 'linksys_inventory_v1';
-const USER_KEY = 'linksys_current_user';
-const LOG_KEY = 'linksys_activity_log';
+/* ******* CONFIG ******* */
+const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec"; // replace with your Web App URL (from Apps Script Deploy)
+const GOOGLE_SPREADSHEET_ID = "1YaKGmumw0BFrlYNoWJhawRCTZkrUSuqeCk0dJR4H5PM"; // replace with your spreadsheet id
+const FIELDS = ["Brand","Model Number","Serial Number","Date Received","Location","Tracking Number","Remarks"];
+const USERS = { admin:{password:"admin123",role:"admin"}, dennis:{password:"Th3password!",role:"admin"}, edmar:{password:"Asdfg12345!",role:"staff"}, van:{password:"P1nkR@nger!",role:"staff"}, viewer:{password:"ViewOnly",role:"viewer"} };
 
-// Embedded values you confirmed earlier
-const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
-const GOOGLE_SPREADSHEET_ID = "1YaKGmumw0BFrlYNoWJhawRCTZkrUSuqeCk0dJR4H5PM";
+/* ******* STATE ******* */
+let inventory = [], activityLog = [], currentUser = {username:"admin",role:"admin"}, selectedIndex = -1;
 
-/* Users */
-const USERS = {
-  admin: { password: 'admin123', role: 'admin' },
-  dennis: { password: 'Th3password!', role: 'admin' },
-  edmar: { password: 'Asdfg12345!', role: 'staff' },
-  van: { password: 'P1nkR@nger!', role: 'staff' },
-  viewer: { password: 'ViewOnly', role: 'viewer' }
-};
+/* ******* HELPERS ******* */
+function el(id){return document.getElementById(id);}
+function showMsg(text,timeout=2500){const s=el("syncStatus");s.textContent=text; s.classList.remove("hidden"); clearTimeout(s._t); s._t=setTimeout(()=>s.classList.add("hidden"),timeout);}
+function setLastSynced(t){el("lastSynced").textContent = "Last sync: " + t;}
 
-let inventory = [], activityLog = [], currentUser = null, selectedIndex = -1;
-
-/* ---------------------------
-   Small helpers
-   --------------------------- */
-function el(id) { return document.getElementById(id); }
-function show(node) { node && node.classList.remove('hidden'); }
-function hide(node) { node && node.classList.add('hidden'); }
-function now() { return new Date().toLocaleString(); }
-function dateStamp() { return new Date().toLocaleDateString('en-US').replace(/\//g,'-'); }
-function setActionMsg(msg, timeout = 2500) {
-  const d = el('actionMsg');
-  d.textContent = msg;
-  show(d);
-  setTimeout(() => hide(d), timeout);
-}
-
-/* ---------------------------
-   Persistence: localStorage
-   --------------------------- */
-function saveLogs() { localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); }
-function loadLogs() {
-  try { activityLog = JSON.parse(localStorage.getItem(LOG_KEY)) || []; } catch { activityLog = []; }
-}
-function saveInv() { localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
-function loadInv() {
-  try { inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { inventory = []; }
-  buildTable();
-}
-
-/* ---------------------------
-   Activity logging
-   --------------------------- */
-function logAction(action) {
-  if (!currentUser) return;
-  const entry = { user: currentUser.username, role: currentUser.role, action, time: now() };
-  activityLog.push(entry);
-  saveLogs();
-  el('lastAction').textContent = `${entry.user} ${entry.action} at ${entry.time}`;
-  if (currentUser.role === 'admin') buildActivity();
-}
-function buildActivity() {
-  const body = el('activityBody');
-  body.innerHTML = '';
-  activityLog.forEach(l => {
-    const tr = document.createElement('tr');
-    ['user','role','action','time'].forEach(k => {
-      const td = document.createElement('td');
-      td.textContent = l[k] || '';
-      tr.appendChild(td);
-    });
-    body.appendChild(tr);
+/* ******* TABLES & FORM ******* */
+function buildTable(){
+  el("theadRow").innerHTML=""; el("tbodyRows").innerHTML="";
+  FIELDS.forEach(f=>{const th=document.createElement("th"); th.textContent=f; el("theadRow").appendChild(th);});
+  if(!inventory.length){el("tbodyRows").innerHTML=`<tr><td colspan="${FIELDS.length}">No items</td></tr>`; return;}
+  inventory.forEach((it,i)=>{
+    const tr=document.createElement("tr"); tr.className="clickable";
+    tr.onclick=()=>loadToForm(i);
+    FIELDS.forEach(f=>{const td=document.createElement("td"); td.textContent = it[f] || ""; tr.appendChild(td);});
+    el("tbodyRows").appendChild(tr);
   });
 }
+function buildActivity(){el("activityBody").innerHTML=""; activityLog.forEach(a=>{const tr=document.createElement("tr"); ["user","role","action","time"].forEach(k=>{const td=document.createElement("td"); td.textContent=a[k]||""; tr.appendChild(td);}); el("activityBody").appendChild(tr);});}
+function capture(){return FIELDS.reduce((acc,f)=>{const id = "f"+f.replace(/\s+/g,""); acc[f] = (el(id) ? el(id).value : el("f"+f).value) || ""; return acc;}, {});}
+function loadToForm(i){ selectedIndex=i; const it=inventory[i]; FIELDS.forEach(f=>{ const id="f"+f.replace(/\s+/g,""); if(el(id)) el(id).value = it[f]||""; });}
+function clearForm(){FIELDS.forEach(f=>{const id="f"+f.replace(/\s+/g,""); if(el(id)) el(id).value="";}); selectedIndex=-1;}
 
-/* ---------------------------
-   Table rendering & form
-   --------------------------- */
-function buildTable() {
-  const h = el('theadRow'), b = el('tbodyRows');
-  h.innerHTML = ''; b.innerHTML = '';
-  FIELDS.forEach(f => { const th = document.createElement('th'); th.textContent = f; h.appendChild(th); });
-  if (!inventory.length) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = FIELDS.length;
-    td.textContent = 'No items';
-    tr.appendChild(td);
-    b.appendChild(tr);
-    return;
-  }
-  inventory.forEach((it, i) => {
-    const tr = document.createElement('tr');
-    tr.classList.add('clickable');
-    tr.onclick = () => loadToForm(i);
-    FIELDS.forEach(f => {
-      const td = document.createElement('td');
-      td.textContent = it[f] || '';
-      tr.appendChild(td);
-    });
-    b.appendChild(tr);
-  });
+/* Create form field ids on top-level for capture compatibility */
+(function wireFormIds(){FIELDS.forEach(f=>{const id="f"+f.replace(/\s+/g,""); const elIn = document.getElementById(id); /* already exists in this markup */ });})();
+
+/* ******* Storage ******* */
+function saveLocal(){localStorage.setItem("inv_x", JSON.stringify(inventory)); localStorage.setItem("log_x", JSON.stringify(activityLog));}
+function loadLocal(){try{inventory=JSON.parse(localStorage.getItem("inv_x"))||[]}catch{inventory=[]} try{activityLog=JSON.parse(localStorage.getItem("log_x"))||[]}catch{activityLog=[]}}
+
+/* ******* Activity logging ******* */
+function logAction(action){ const e = {user: currentUser.username, role: currentUser.role, action, time: new Date().toLocaleString()}; activityLog.push(e); saveLocal(); buildActivity(); }
+
+/* ******* SYNC (client -> Apps Script) ******* */
+async function syncInventory(){
+  const payload = { type: "inventory", sheetId: GOOGLE_SPREADSHEET_ID, rows: inventory };
+  const res = await fetch(GOOGLE_WEBAPP_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)});
+  const text = await res.text().catch(()=>"");
+  if(res.ok){ setLastSynced(new Date().toLocaleString()); showMsg("Inventory synced"); logAction("synced inventory"); return true; }
+  else { showMsg("Inventory sync failed: " + (text||res.status)); console.error("syncInventory", res.status, text); return false; }
+}
+async function syncActivity(){
+  const payload = { type: "activity", sheetId: GOOGLE_SPREADSHEET_ID, rows: activityLog };
+  const res = await fetch(GOOGLE_WEBAPP_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)});
+  const text = await res.text().catch(()=>"");
+  if(res.ok){ setLastSynced(new Date().toLocaleString()); showMsg("Activity synced"); logAction("synced activity"); return true; }
+  else { showMsg("Activity sync failed: " + (text||res.status)); console.error("syncActivity", res.status, text); return false; }
+}
+async function autoSyncAll(){
+  try{ await syncInventory(); }catch(e){ console.warn("inventory sync err",e); }
+  try{ await syncActivity(); }catch(e){ console.warn("activity sync err",e); }
 }
 
-function loadToForm(i) {
-  selectedIndex = i;
-  const it = inventory[i] || {};
-  el('fBrand').value = it['Brand'] || '';
-  el('fModel').value = it['Model Number'] || '';
-  el('fSerial').value = it['Serial Number'] || '';
-  el('fDate').value = it['Date Received'] || '';
-  el('fLocation').value = it['Location'] || '';
-  el('fTracking').value = it['Tracking Number'] || '';
-  el('fRemarks').value = it['Remarks'] || '';
-}
+/* ******* INVENTORY operations ******* */
+async function addItem(){ const it = {}; FIELDS.forEach(f=>{const id="f"+f.replace(/\s+/g,""); it[f]=(el(id).value||"").toUpperCase()}); if(!it["Brand"]){alert("Brand required");return;} inventory.unshift(it); saveLocal(); buildTable(); clearForm(); logAction("added item"); await autoSyncAll(); }
+async function saveItem(){ if(selectedIndex<0){ alert("Select a row"); return; } FIELDS.forEach(f=>{const id="f"+f.replace(/\s+/g,""); inventory[selectedIndex][f]=(el(id).value||"").toUpperCase()}); saveLocal(); buildTable(); clearForm(); logAction("saved item"); await autoSyncAll(); }
+async function removeItem(){ if(selectedIndex<0){ alert("Select a row"); return; } if(!confirm("Remove selected?")) return; inventory.splice(selectedIndex,1); saveLocal(); buildTable(); clearForm(); logAction("removed item"); await autoSyncAll(); }
 
-function capture() {
-  return {
-    'Brand': (el('fBrand').value || '').toUpperCase(),
-    'Model Number': (el('fModel').value || '').toUpperCase(),
-    'Serial Number': (el('fSerial').value || '').toUpperCase(),
-    'Date Received': (el('fDate').value || ''),
-    'Location': (el('fLocation').value || '').toUpperCase(),
-    'Tracking Number': (el('fTracking').value || '').toUpperCase(),
-    'Remarks': (el('fRemarks').value || '').toUpperCase()
-  };
-}
-
-function clearForm() {
-  ['fBrand','fModel','fSerial','fDate','fLocation','fTracking','fRemarks'].forEach(id => el(id).value = '');
-  selectedIndex = -1;
-  setActionMsg('Item Details Cleared');
-}
-
-/* ---------------------------
-   Inventory operations (with auto-sync hooks)
-   --------------------------- */
-async function addItem() {
-  const it = capture();
-  if (!it.Brand) return alert('Brand required');
-  inventory.unshift(it);
-  saveInv();
-  buildTable();
-  clearForm();
-  setActionMsg('Item Added');
-  logAction('added item');
-  await autoSyncAll(); // AUTO-SYNC
-}
-
-async function saveItem() {
-  if (selectedIndex < 0) return alert('Select row');
-  const it = capture();
-  inventory[selectedIndex] = it;
-  saveInv();
-  buildTable();
-  clearForm();
-  setActionMsg('Changes Saved');
-  logAction('saved item');
-  await autoSyncAll(); // AUTO-SYNC
-}
-
-async function delItem() {
-  if (selectedIndex < 0) return alert('Select row');
-  if (!confirm('Remove selected?')) return;
-  inventory.splice(selectedIndex, 1);
-  saveInv();
-  buildTable();
-  clearForm();
-  setActionMsg('Item Removed');
-  logAction('removed item');
-  await autoSyncAll(); // AUTO-SYNC
-}
-
-/* ---------------------------
-   CSV import/export (simple)
-   --------------------------- */
-function exportInventoryCSV() {
-  const csv = FIELDS.join(',') + '\n' + inventory.map(r => FIELDS.map(f => `"${(r[f]||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `inventory_export_${dateStamp()}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  setActionMsg('Exported Inventory');
-  logAction('exported inventory');
-}
-
-function exportLogs() {
-  const csv = 'User,Role,Action,Timestamp\n' + activityLog.map(l => `${l.user},${l.role},"${l.action}",${l.time}`).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `activity_log_${dateStamp()}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  setActionMsg('Exported Logs');
-  logAction('exported logs');
-}
-
-/* Simple CSV import (naive — does not fully support quoted CSV with embedded newlines) */
-function importFile(f) {
-  const r = new FileReader();
-  r.onload = e => {
-    const lines = e.target.result.split(/\r?\n/).filter(Boolean);
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const p = lines[i].split(',').map(x => x.replace(/^"|"$/g, ''));
-      const o = {};
-      FIELDS.forEach((f, j) => o[f] = p[j] || '');
-      rows.push(o);
-    }
-    inventory = rows;
-    saveInv();
-    buildTable();
-    setActionMsg('Imported Inventory');
-    logAction('imported inventory');
-    // auto-sync after import
-    autoSyncAll();
-  };
-  r.readAsText(f);
-}
-
-function downloadTemplate() {
-  const b = new Blob([FIELDS.join(',') + '\n'], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(b);
-  a.download = 'inventory_template.csv';
-  a.click();
-  URL.revokeObjectURL(a.href);
-  setActionMsg('Template Downloaded');
-  logAction('downloaded template');
-}
-
-/* ---------------------------
-   Auto-sync wrapper & schedule
-   --------------------------- */
-async function autoSyncAll() {
-  // run inventory sync then activity sync, but don't throw on errors
-  try {
-    await syncInventoryToGoogle();
-  } catch (e) {
-    console.warn("Auto-sync inventory failed:", e);
-  }
-  try {
-    await syncActivityToGoogle();
-  } catch (e) {
-    console.warn("Auto-sync activity failed:", e);
-  }
-  // optional: small UI update (timestamp)
-  console.log("Auto-sync attempt:", new Date().toLocaleString());
-}
-
-/* ---------------------------
-   Google Sheets sync functions
-   --------------------------- */
-async function syncInventoryToGoogle() {
-  if (!inventory.length) {
-    // If no items, we may still want to clear the sheet depending on design.
-    // For now, we still call the API with an empty array so the sheet is cleared server-side.
-  }
-  const payload = { type: 'inventory', sheetId: GOOGLE_SPREADSHEET_ID, rows: inventory };
-  try {
-    const res = await fetch(GOOGLE_WEBAPP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const text = await res.text();
-    if (res.ok) {
-      setActionMsg('Inventory synced to Google Sheets');
-      logAction('synced inventory to google');
-    } else {
-      setActionMsg('Failed to sync inventory: ' + (text || res.status));
-      console.error('Sync inventory failed', res.status, text);
-    }
-    return res;
-  } catch (err) {
-    setActionMsg('Error syncing inventory (network)');
-    console.error('Network or fetch error (inventory):', err);
-    throw err;
-  }
-}
-
-async function syncActivityToGoogle() {
-  const payload = { type: 'activity', sheetId: GOOGLE_SPREADSHEET_ID, rows: activityLog };
-  try {
-    const res = await fetch(GOOGLE_WEBAPP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const text = await res.text();
-    if (res.ok) {
-      setActionMsg('Activity log synced to Google Sheets');
-      logAction('synced activity to google');
-    } else {
-      setActionMsg('Failed to sync activity: ' + (text || res.status));
-      console.error('Sync activity failed', res.status, text);
-    }
-    return res;
-  } catch (err) {
-    setActionMsg('Error syncing activity (network)');
-    console.error('Network or fetch error (activity):', err);
-    throw err;
-  }
-}
-
-/* ---------------------------
-   Login & permissions
-   --------------------------- */
-async function login() {
-  const u = el('loginUser').value.trim();
-  const p = el('loginPass').value;
-  const rec = USERS[u];
-  if (!rec || rec.password !== p) return alert('Invalid');
-  currentUser = { username: u, role: rec.role };
-  localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
-  hide(el('loginBox'));
-  show(el('app'));
-  el('userInfo').textContent = `${u} (${rec.role})`;
-  applyPerms();
-  loadLogs();
-  loadInv();
-  buildActivity();
-  logAction('logged in');
-  try {
-    // Immediately sync logs/inventory after login (optional)
-    await autoSyncAll();
-  } catch (e) {
-    console.warn('Initial sync after login failed:', e);
-  }
-}
-
-async function logout(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  try {
-    await autoSyncAll(); // sync before logging out
-  } catch (err) {
-    console.warn('Auto-sync before logout failed:', err);
-  }
-  logAction('logged out');
-  localStorage.removeItem(USER_KEY);
-  // slight delay so last log action can be saved (and synced)
-  setTimeout(() => location.reload(), 200);
-}
-
-function applyPerms() {
-  const r = currentUser.role;
-  el('btnAdd').disabled = !(r === 'admin' || r === 'staff');
-  el('btnSave').disabled = !(r === 'admin' || r === 'staff');
-  el('btnRemove').disabled = !(r === 'admin');
-  el('btnImport').disabled = !(r === 'admin');
-  el('btnExport').disabled = !(r === 'admin');
-  (r === 'admin') ? show(el('activityLogBox')) : hide(el('activityLogBox'));
-}
-
-/* ---------------------------
-   Initialization
-   --------------------------- */
-document.addEventListener('DOMContentLoaded', () => {
-  // Uppercase inputs behavior
-  document.querySelectorAll('input.upper').forEach(i => i.addEventListener('input', () => i.value = i.value.toUpperCase()));
-
-  // Restore logged in user (if any)
-  try {
-    const u = JSON.parse(localStorage.getItem(USER_KEY));
-    if (u) {
-      currentUser = u;
-      hide(el('loginBox'));
-      show(el('app'));
-      el('userInfo').textContent = `${u.username} (${u.role})`;
-      applyPerms();
-      loadLogs();
-      loadInv();
-      buildActivity();
-    }
-  } catch (err) { /* ignore */ }
-
-  // Button wiring
-  el('btnLogin').onclick = () => login();
-  el('btnLogout').onclick = (e) => logout(e);
-  el('btnQuit').onclick = () => { window.close && window.close(); };
-
-  ['loginUser', 'loginPass'].forEach(id => {
-    el(id).addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { e.preventDefault(); login(); }
-    });
+/* ******* INIT wiring ******* */
+document.addEventListener("DOMContentLoaded", ()=>{
+  // wire form element IDs to match capture
+  FIELDS.forEach(f=>{const n = "f"+f.replace(/\s+/g,""); // already present in markup as same ids
+    // uppercase input enforcement
+    const input = document.getElementById(n);
+    if(input) input.addEventListener("input", ()=> input.value = input.value.toUpperCase());
   });
 
-  // Item actions
-  el('btnAdd').onclick = () => addItem();
-  el('btnSave').onclick = () => saveItem();
-  el('btnRemove').onclick = () => delItem();
-  el('btnClearForm').onclick = clearForm;
+  // test user (you may implement login if you want)
+  currentUser = { username: "admin", role: "admin" };
+  el("userInfo").textContent = `${currentUser.username} (${currentUser.role})`;
 
-  // Import / Export
-  el('btnExport').onclick = exportInventoryCSV;
-  el('btnImport').onclick = () => {
-    const f = el('fileImport').files[0];
-    if (!f) return alert('Select CSV');
-    importFile(f);
-  };
-  el('btnDownloadTemplate').onclick = downloadTemplate;
+  // button wiring
+  el("btnAdd").onclick = addItem;
+  el("btnSave").onclick = saveItem;
+  el("btnRemove").onclick = removeItem;
+  el("btnClear").onclick = clearForm;
+  el("btnLogout").onclick = async (e)=>{ e.preventDefault(); await autoSyncAll(); logAction("logged out"); localStorage.removeItem("inv_x"); localStorage.removeItem("log_x"); location.reload(); };
 
-  // Search (clickable results)
-  el('btnSearch').onclick = () => {
-    const q = el('searchBox').value.toLowerCase().trim();
-    const b = el('tbodyRows');
-    b.innerHTML = '';
-    inventory.forEach((it, i) => {
-      if (!q || FIELDS.some(k => (it[k] || '').toLowerCase().includes(q))) {
-        const tr = document.createElement('tr');
-        tr.classList.add('clickable');
-        tr.onclick = () => loadToForm(i);
-        FIELDS.forEach(k => {
-          const td = document.createElement('td');
-          td.textContent = it[k] || '';
-          tr.appendChild(td);
-        });
-        b.appendChild(tr);
-      }
-    });
-  };
-  el('btnShowAll').onclick = buildTable;
-  el('btnClearSearch').onclick = () => { el('searchBox').value = ''; buildTable(); };
+  // load local then render and auto-sync
+  loadLocal(); buildTable(); buildActivity();
 
-  // Activity log controls
-  el('btnExportLogs').onclick = exportLogs;
-  el('btnClearLogs').onclick = async () => {
-    if (confirm('Clear logs?')) {
-      activityLog = [];
-      saveLogs();
-      buildActivity();
-      setActionMsg('Logs Cleared');
-      await autoSyncAll(); // AUTO-SYNC on clear
-    }
-  };
+  // run an initial auto-sync in background (non-blocking)
+  autoSyncAll().catch(console.warn);
 
-  // Google sync buttons
-  el('btnSyncInv').onclick = () => syncInventoryToGoogle();
-  el('btnSyncActivity').onclick = () => syncActivityToGoogle();
-
-  // Background auto-sync every 60 seconds
-  setInterval(() => {
-    autoSyncAll().catch(err => console.warn('Background auto-sync error:', err));
-  }, 60000);
-
-  // Load initial data
-  loadLogs();
-  loadInv();
-  buildActivity();
+  // periodic backup every 60s
+  setInterval(()=>autoSyncAll().catch(console.warn), 60000);
 });
 </script>
 </body>
 </html>
-
