@@ -141,23 +141,32 @@ function el(i){return document.getElementById(i);}function show(e){e.classList.r
 function setActionMsg(m){const d=el('actionMsg');d.textContent=m;show(d);setTimeout(()=>hide(d),2000);}function dateStamp(){return new Date().toLocaleDateString('en-US').replace(/\//g,'-');}
 
 // ---------------- GOOGLE SYNC ----------------
+// ---------------- GOOGLE SYNC ----------------
 async function syncInventory(record){
-  try{
-    await fetch(SHEET_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({...record,Type:'inventory'})
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...record, Type: 'inventory' })
     });
-  }catch(err){console.error('Inventory Sync Error:',err);}  }
+  } catch(err) {
+    console.error('Inventory Sync Error:', err);
+  }
+}
 
 async function syncActivityLog(entry){
-  try{
-    await fetch(SHEET_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({...entry,Type:'log'})
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...entry, Type: 'log' })
     });
-  }catch(err){console.error('Log Sync Error:',err);} }
+  } catch(err) {
+    console.error('Log Sync Error:', err);
+  }
+}
 
 // ---------------- LOGGING ----------------
 function loadLogs(){try{activityLog=JSON.parse(localStorage.getItem(LOG_KEY))||[]}catch{activityLog=[];}}
@@ -239,3 +248,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
