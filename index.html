@@ -141,6 +141,62 @@ function el(i){return document.getElementById(i);}function show(e){e.classList.r
 function setActionMsg(m){const d=el('actionMsg');d.textContent=m;show(d);setTimeout(()=>hide(d),2000);}function dateStamp(){return new Date().toLocaleDateString('en-US').replace(/\//g,'-');}
 
 // ---------------- GOOGLE SYNC ----------------
+  // ------------------ Sync: ADD (append row) ------------------
+async function syncAdd(record){
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...record, Type: "add" })
+    });
+    // we do not block UI on response; append should be fast
+  } catch (err) {
+    console.error("syncAdd error:", err);
+    // optional: show UI notification
+  }
+}
+
+// ------------------ Sync: UPDATE (replace row contents) ------------------
+async function syncUpdate(record, rowIndex){
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...record, RowIndex: rowIndex, Type: "update" })
+    });
+    // no JSON response expected; server writes the row
+  } catch (err) {
+    console.error("syncUpdate error:", err);
+    // optional: inform user
+  }
+}
+
+// ------------------ Sync: DELETE (password prompt + server delete) ------------------
+async function syncDelete(rowIndex){
+  try {
+    const pw = prompt("Enter admin password to delete:");
+    if (!pw) return false; // user cancelled
+
+    const res = await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ RowIndex: rowIndex, Password: pw, Type: "delete" })
+    });
+
+    // Expect server to return JSON like { status: "OK" } or { status: "DENIED" }
+    const result = await res.json();
+    if (result.status === "DENIED") {
+      alert("Incorrect password.");
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("syncDelete error:", err);
+    alert("Delete failed (network or server error). See console for details.");
+    return false;
+  }
+}
+
 // ---------------- GOOGLE SYNC ----------------
 async function syncInventory(record){
   try {
@@ -248,4 +304,5 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
