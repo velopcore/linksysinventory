@@ -116,7 +116,7 @@
         <button id="btnClearLogs" class="warn">Clear Logs</button>
       </div>
     </div>
-    <table id="activityTable"><thead><tr><th>User</th><th>Role</th><th>Action</th><th>Timestamp</th></tr></thead><tbody id="activityBody"></tbody></table>
+    <table id="activityTable">   <thead>     <tr>       <th>User</th>       <th>Role</th>       <th>Action</th>       <th>Serial Number</th>       <th>Brand</th>       <th>Model Number</th>       <th>Location</th>       <th>Timestamp</th>     </tr>   </thead>   <tbody id="activityBody"></tbody> </table>
   </div>
 </div>
 
@@ -173,22 +173,89 @@ function loadLogs(){try{activityLog=JSON.parse(localStorage.getItem(LOG_KEY))||[
 function saveLogs(){localStorage.setItem(LOG_KEY,JSON.stringify(activityLog));}
 
 function logAction(a){
-  if(!currentUser)return;
-  const e={user:currentUser.username,role:currentUser.role,action:a,time:now()};
+  if (!currentUser) return;
+
+  // Capture item fields from the form (if present)
+  const serial = (el('fSerial').value || '').toUpperCase();
+  const brand = (el('fBrand').value || '').toUpperCase();
+  const model = (el('fModel').value || '').toUpperCase();
+  const location = (el('fLocation').value || '').toUpperCase();
+
+  const e = {
+    user: currentUser.username,
+    role: currentUser.role,
+    action: a,
+    serial: serial,
+    brand: brand,
+    model: model,
+    location: location,
+    time: now()
+  };
+
+  // push to local activity log and persist
   activityLog.push(e);
   saveLogs();
-  el('lastAction').textContent=`${e.user} ${e.action} at ${e.time}`;
-  if(currentUser.role==='admin')buildActivity();
 
-  // SYNC TO GOOGLE SHEETS
-  syncActivityLog({User:e.user,Role:e.role,Action:e.action});
+  // update UI lastAction
+  el('lastAction').textContent = `${e.user} ${e.action} (SN: ${serial || '—'}) at ${e.time}`;
+
+  // refresh activity table for admins
+  if (currentUser.role === 'admin') buildActivity();
+
+  // SYNC TO GOOGLE SHEETS - include new fields
+  syncActivityLog({
+    User: e.user,
+    Role: e.role,
+    Action: e.action,
+    Serial: e.serial,
+    Brand: e.brand,
+    Model: e.model,
+    Location: e.location
+  });
 }
 
-function buildActivity(){const b=el('activityBody');b.innerHTML='';activityLog.forEach(l=>{const tr=document.createElement('tr');['user','role','action','time'].forEach(k=>{const td=document.createElement('td');td.textContent=l[k];tr.appendChild(td);});b.appendChild(tr);});}
+function buildActivity(){
+  const b = el('activityBody');
+  b.innerHTML = '';
+  activityLog.forEach(l => {
+    const tr = document.createElement('tr');
+    // Order must match table header: User, Role, Action, Serial, Brand, Model, Location, Time
+    ['user','role','action','serial','brand','model','location','time'].forEach(k => {
+      const td = document.createElement('td');
+      td.textContent = l[k] || '';
+      tr.appendChild(td);
+    });
+    b.appendChild(tr);
+  });
+}
 
 // ---------------- EXPORT ----------------
 function exportInventoryCSV(){const csv=FIELDS.join(',')+'\n'+inventory.map(r=>FIELDS.map(f=>`"${(r[f]||'').replace(/"/g,'""')}"`).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`inventory_export_${dateStamp()}.csv`;a.click();URL.revokeObjectURL(a.href);setActionMsg('Exported Inventory');logAction('exported inventory');}
-function exportLogs(){const csv='User,Role,Action,Timestamp\n'+activityLog.map(l=>`${l.user},${l.role},"${l.action}",${l.time}`).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`activity_log_${dateStamp()}.csv`;a.click();URL.revokeObjectURL(a.href);}
+function exportLogs(){
+  const csvHeader = 'User,Role,Action,Serial Number,Brand,Model Number,Location,Timestamp\n';
+  const csvRows = activityLog.map(l => {
+    // escape double quotes in each field
+    const esc = v => `"${(v || '').toString().replace(/"/g,'""')}"`;
+    return [
+      esc(l.user),
+      esc(l.role),
+      esc(l.action),
+      esc(l.serial),
+      esc(l.brand),
+      esc(l.model),
+      esc(l.location),
+      esc(l.time)
+    ].join(',');
+  }).join('\n');
+
+  const csv = csvHeader + csvRows;
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `activity_log_${dateStamp()}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 // ---------------- INVENTORY ----------------
 function saveInv(){localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}
@@ -248,3 +315,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
