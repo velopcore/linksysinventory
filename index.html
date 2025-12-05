@@ -139,256 +139,297 @@ const FIELDS = ['Brand','Model Number','Serial Number','Date Received','Location
 const STORAGE_KEY='linksys_inventory_v1',USER_KEY='linksys_current_user',LOG_KEY='linksys_activity_log';
 
 // --- Google Sync URL ---
-// Replace with your deployed Apps Script web app URL — keep it as is if already correct.
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
+const SHEET_URL = "YOUR DEPLOYED URL HERE"; /* replace */
 
-const USERS={
-  admin:{password:'admin123',role:'admin'},
-  dennis:{password:'Th3password!',role:'admin'},
-  edmar:{password:'Asdfg12345!',role:'staff'},
-  van:{password:'P1nkR@nger!',role:'staff'},
-  viewer:{password:'ViewOnly',role:'viewer'}
-};
-
-let inventory=[],activityLog=[],currentUser=null,selectedIndex=-1;
-
-function el(i){return document.getElementById(i);}
+// Utility helpers
+function el(id){return document.getElementById(id);}
 function show(e){e.classList.remove('hidden');}
 function hide(e){e.classList.add('hidden');}
 function now(){return new Date().toLocaleString();}
-function setActionMsg(m){const d=el('actionMsg');d.textContent=m;show(d);setTimeout(()=>hide(d),2000);}
 function dateStamp(){return new Date().toLocaleDateString('en-US').replace(/\//g,'-');}
+function setActionMsg(txt){const d=el('actionMsg');d.textContent=txt;show(d);setTimeout(()=>hide(d),2000);}
 
-// ---------------- GOOGLE SYNC ----------------
+// ---------------- SYNC FUNCTIONS ----------------
 async function syncInventory(record){
-  try {
-    await fetch(SHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...record, Type: 'inventory' })
+  try{
+    await fetch(SHEET_URL,{
+      method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...record,Type:'inventory'})
     });
-  } catch(err) {
-    console.error('Inventory Sync Error:', err);
-  }
+  }catch(err){console.log(err);}
 }
 
 async function syncActivityLog(entry){
-  try {
-    await fetch(SHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...entry, Type: 'log' })
+  try{
+    await fetch(SHEET_URL,{
+      method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...entry,Type:'log'})
     });
-  } catch(err) {
-    console.error('Log Sync Error:', err);
-  }
+  }catch(err){console.log(err);}
 }
 
 // ---------------- LOGGING ----------------
+let activityLog=[];
 function loadLogs(){
-  try {
-    let raw = localStorage.getItem(LOG_KEY);
-    let arr = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(arr)) arr = [];
+  try{
+    const raw=localStorage.getItem(LOG_KEY);
+    let arr=raw?JSON.parse(raw):[];
+    if(!Array.isArray(arr))arr=[];
 
-    // detect if migration needed: look for missing keys on any item
-    const needsMigration = arr.some(item => !('serial' in item) || !('brand' in item) || !('model' in item) || !('location' in item));
+    // Auto-migrate legacy logs
+    arr=arr.map(it=>({
+      user:it.user||it.User||'',
+      role:it.role||it.Role||'',
+      action:it.action||it.Action||'',
+      serial:it.serial||it.Serial||it['Serial Number']||'',
+      brand:it.brand||it.Brand||'',
+      model:it.model||it.Model||it['Model Number']||'',
+      location:it.location||it.Location||'',
+      time:it.time||it.Time||now()
+    }));
 
-    if (needsMigration) {
-      arr = arr.map(item => ({
-        user: item.user || item.User || '',
-        role: item.role || item.Role || '',
-        action: item.action || item.Action || '',
-        serial: (item.serial || item.Serial || item['Serial Number'] || '') ,
-        brand: (item.brand || item.Brand || ''),
-        model: (item.model || item.Model || item['Model Number'] || ''),
-        location: (item.location || item.Location || ''),
-        time: item.time || item.Time || item.timestamp || item.Timestamp || (new Date()).toLocaleString()
-      }));
-      // save migrated structure
-      localStorage.setItem(LOG_KEY, JSON.stringify(arr));
-      console.log('Activity log auto-migrated to new schema.');
-    }
-
-    activityLog = arr;
-  } catch (err) {
-    console.error('loadLogs error', err);
-    activityLog = [];
+    activityLog=arr;
+    localStorage.setItem(LOG_KEY,JSON.stringify(arr));
+  }catch{
+    activityLog=[];
   }
 }
+
 function saveLogs(){localStorage.setItem(LOG_KEY,JSON.stringify(activityLog));}
 
-function logAction(a){
-  if (!currentUser) return;
-
-  // Capture item fields from the form (if present)
-  const serial = (el('fSerial').value || '').toUpperCase();
-  const brand = (el('fBrand').value || '').toUpperCase();
-  const model = (el('fModel').value || '').toUpperCase();
-  const location = (el('fLocation').value || '').toUpperCase();
-
-  const e = {
-    user: currentUser.username,
-    role: currentUser.role,
-    action: a,
-    serial: serial,
-    brand: brand,
-    model: model,
-    location: location,
-    time: now()
+function logAction(action){
+  const e={
+    user:currentUser.username,
+    role:currentUser.role,
+    action,
+    serial:(el('fSerial').value||'').toUpperCase(),
+    brand:(el('fBrand').value||'').toUpperCase(),
+    model:(el('fModel').value||'').toUpperCase(),
+    location:(el('fLocation').value||'').toUpperCase(),
+    time:now()
   };
 
-  // push to local activity log and persist
   activityLog.push(e);
   saveLogs();
 
-  // update UI lastAction
-  el('lastAction').textContent = `${e.user} ${e.action} (SN: ${serial || '—'}) at ${e.time}`;
+  el('lastAction').textContent=`${e.user} ${action} (SN: ${e.serial}) at ${e.time}`;
 
-  // refresh activity table for admins (and always keep data accurate)
-  if (currentUser.role === 'admin') buildActivity();
+  if(currentUser.role==='admin')buildActivity();
 
-  // SYNC TO GOOGLE SHEETS - include new fields and use "Model Number" key for backend mapping
   syncActivityLog({
-    User: e.user,
-    Role: e.role,
-    Action: e.action,
-    Serial: e.serial,
-    Brand: e.brand,
-    "Model Number": e.model,
-    Location: e.location
+    User:e.user,Role:e.role,Action:e.action,
+    Serial:e.serial,Brand:e.brand,
+    "Model Number":e.model,
+    Location:e.location
   });
 }
 
 function buildActivity(){
-  const b = el('activityBody');
-  b.innerHTML = '';
-  activityLog.forEach(l => {
-    const tr = document.createElement('tr');
-    // Order must match table header: User, Role, Action, Serial, Brand, Model, Location, Time
-    ['user','role','action','serial','brand','model','location','time'].forEach(k => {
-      const td = document.createElement('td');
-      td.textContent = l[k] || '';
+  const body=el('activityBody');
+  body.innerHTML='';
+  activityLog.forEach(r=>{
+    const tr=document.createElement('tr');
+    ['user','role','action','serial','brand','model','location','time'].forEach(k=>{
+      const td=document.createElement('td');
+      td.textContent=r[k]||'';
       tr.appendChild(td);
     });
-    b.appendChild(tr);
+    body.appendChild(tr);
   });
 }
 
-// ---------------- EXPORT ----------------
-function exportInventoryCSV(){
-  const csv = FIELDS.join(',') + '\n' + inventory.map(r => FIELDS.map(f => `"${(r[f]||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv],{type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `inventory_export_${dateStamp()}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  setActionMsg('Exported Inventory');
-  logAction('exported inventory');
-}
-
-function exportLogs(){
-  const csvHeader = 'User,Role,Action,Serial Number,Brand,Model Number,Location,Timestamp\n';
-  const csvRows = activityLog.map(l => {
-    const esc = v => `"${(v || '').toString().replace(/"/g,'""')}"`;
-    return [
-      esc(l.user),
-      esc(l.role),
-      esc(l.action),
-      esc(l.serial),
-      esc(l.brand),
-      esc(l.model),
-      esc(l.location),
-      esc(l.time)
-    ].join(',');
-  }).join('\n');
-
-  const csv = csvHeader + csvRows;
-  const blob = new Blob([csv], {type: 'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `activity_log_${dateStamp()}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
 // ---------------- INVENTORY ----------------
+let inventory=[],currentUser=null,selectedIndex=-1;
+
 function saveInv(){localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}
-function loadInv(){try{inventory=JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch{inventory=[];}buildTable();}
+function loadInv(){inventory=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');buildTable();}
 
 function buildTable(){
-  const h = el('theadRow'), b = el('tbodyRows');
-  h.innerHTML = ''; b.innerHTML = '';
-  FIELDS.forEach(f => { const th = document.createElement('th'); th.textContent = f; h.appendChild(th); });
-  inventory.forEach((it,i) => {
-    const tr = document.createElement('tr');
+  const head=el('theadRow'), body=el('tbodyRows');
+  head.innerHTML='';body.innerHTML='';
+  FIELDS.forEach(f=>{const th=document.createElement('th');th.textContent=f;head.appendChild(th);});
+  inventory.forEach((r,i)=>{
+    const tr=document.createElement('tr');
     tr.classList.add('clickable');
-    tr.onclick = () => loadToForm(i);
-    FIELDS.forEach(f => {
-      const td = document.createElement('td');
-      td.textContent = it[f] || '';
+    tr.onclick=()=>loadToForm(i);
+    FIELDS.forEach(f=>{
+      const td=document.createElement('td');
+      td.textContent=r[f]||'';
       tr.appendChild(td);
     });
-    b.appendChild(tr);
+    body.appendChild(tr);
   });
 }
 
 function loadToForm(i){
   selectedIndex=i;
-  const it=inventory[i]||{};
-  el('fBrand').value=it['Brand']||'';
-  el('fModel').value=it['Model Number']||'';
-  el('fSerial').value=it['Serial Number']||'';
-  el('fDate').value=it['Date Received']||'';
-  el('fLocation').value=it['Location']||'';
-  el('fTracking').value=it['Tracking Number']||'';
-  el('fRemarks').value=it['Remarks']||'';
+  const r=inventory[i];
+  el('fBrand').value=r['Brand'];
+  el('fModel').value=r['Model Number'];
+  el('fSerial').value=r['Serial Number'];
+  el('fDate').value=r['Date Received'];
+  el('fLocation').value=r['Location'];
+  el('fTracking').value=r['Tracking Number'];
+  el('fRemarks').value=r['Remarks'];
 }
 
-function capture(){return {
-  'Brand':(el('fBrand').value||'').toUpperCase(),
-  'Model Number':(el('fModel').value||'').toUpperCase(),
-  'Serial Number':(el('fSerial').value||'').toUpperCase(),
-  'Date Received':(el('fDate').value||''),
-  'Location':(el('fLocation').value||'').toUpperCase(),
-  'Tracking Number':(el('fTracking').value||'').toUpperCase(),
-  'Remarks':(el('fRemarks').value||'').toUpperCase()
+function capture(){return{
+  'Brand':el('fBrand').value.toUpperCase(),
+  'Model Number':el('fModel').value.toUpperCase(),
+  'Serial Number':el('fSerial').value.toUpperCase(),
+  'Date Received':el('fDate').value,
+  'Location':el('fLocation').value.toUpperCase(),
+  'Tracking Number':el('fTracking').value.toUpperCase(),
+  'Remarks':el('fRemarks').value.toUpperCase()
 };}
 
-function clearForm(){el('fBrand').value='';el('fModel').value='';el('fSerial').value='';el('fDate').value='';el('fLocation').value='';el('fTracking').value='';el('fRemarks').value='';selectedIndex=-1;setActionMsg('Item Details Cleared');}
+function clearForm(){
+  el('fBrand').value='';
+  el('fModel').value='';
+  el('fSerial').value='';
+  el('fDate').value='';
+  el('fLocation').value='';
+  el('fTracking').value='';
+  el('fRemarks').value='';
+  selectedIndex=-1;
+}
 
-function addItem(){const it=capture();if(!it.Brand)return alert('Brand required');inventory.unshift(it);saveInv();syncInventory(it);buildTable();clearForm();setActionMsg('Item Added');logAction('added item');}
-function saveItem(){if(selectedIndex<0)return alert('Select row');const it=capture();inventory[selectedIndex]=it;saveInv();syncInventory(it);buildTable();clearForm();setActionMsg('Changes Saved');logAction('saved item');}
-function delItem(){if(selectedIndex<0)return alert('Select row');if(!confirm('Remove selected?'))return;const removed=inventory[selectedIndex];inventory.splice(selectedIndex,1);saveInv();syncInventory(removed);buildTable();clearForm();setActionMsg('Item Removed');logAction('removed item');}
+// FIXED VERSIONS: **Log BEFORE clearForm()**
+function addItem(){
+  const item=capture();
+  if(!item.Brand)return alert('Brand required');
+  inventory.unshift(item);
+  saveInv(); syncInventory(item); buildTable();
+  logAction('added item');   // BEFORE clearing
+  clearForm();
+  setActionMsg('Item Added');
+}
 
-// --------------- IMPORT / TEMPLATE ----------------
-function importFile(f){const r=new FileReader();r.onload=e=>{const lines=e.target.result.split(/\r?\n/).filter(Boolean);let rows=[];for(let i=1;i<lines.length;i++){const p=lines[i].split(',').map(x=>x.replace(/^"|"$/g,''));const o={};FIELDS.forEach((f,j)=>o[f]=p[j]||'');rows.push(o);}inventory=rows;saveInv();buildTable();setActionMsg('Imported Inventory');logAction('imported inventory');};r.readAsText(f);}
+function saveItem(){
+  if(selectedIndex<0)return alert('Select row');
+  const item=capture();
+  inventory[selectedIndex]=item;
+  saveInv(); syncInventory(item); buildTable();
+  logAction('saved item');   // BEFORE clearing
+  clearForm();
+  setActionMsg('Changes Saved');
+}
 
-function downloadTemplate(){const b=new Blob([FIELDS.join(',')+'\n'],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='inventory_template.csv';a.click();URL.revokeObjectURL(a.href);setActionMsg('Template Downloaded');logAction('downloaded template');}
+function delItem(){
+  if(selectedIndex<0)return alert('Select row');
+  if(!confirm('Remove selected?'))return;
+  const item=inventory[selectedIndex];
+  inventory.splice(selectedIndex,1);
+  saveInv(); syncInventory(item); buildTable();
+  logAction('removed item'); // BEFORE clearing
+  clearForm();
+  setActionMsg('Item Removed');
+}
+
+// ---------------- IMPORT / EXPORT ----------------
+function importFile(f){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split(/\r?\n/).filter(Boolean);
+    inventory=lines.slice(1).map(l=>{
+      const p=l.split(',').map(v=>v.replace(/^"|"$/g,''));
+      const r={}; FIELDS.forEach((f,i)=>r[f]=p[i]||'');
+      return r;
+    });
+    saveInv(); buildTable(); setActionMsg('Imported Inventory'); logAction('imported inventory');
+  };
+  reader.readAsText(f);
+}
+
+function exportInventoryCSV(){
+  const csv=FIELDS.join(',')+'\n'+inventory.map(r=>FIELDS.map(f=>`"${(r[f]||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`inventory_export_${dateStamp()}.csv`;a.click();
+  setActionMsg('Exported Inventory');logAction('exported inventory');
+}
+
+function exportLogs(){
+  const header='User,Role,Action,Serial Number,Brand,Model Number,Location,Timestamp\n';
+  const esc=s=>`"${(s||'').toString().replace(/"/g,'""')}"`;
+  const rows=activityLog.map(l=>[
+    esc(l.user),esc(l.role),esc(l.action),
+    esc(l.serial),esc(l.brand),
+    esc(l.model),esc(l.location),
+    esc(l.time)
+  ].join(',')).join('\n');
+  const blob=new Blob([header+rows],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`activity_log_${dateStamp()}.csv`;a.click();
+}
 
 // ---------------- LOGIN ----------------
-function login(){const u=el('loginUser').value.trim(),p=el('loginPass').value;const rec=USERS[u];if(!rec||rec.password!==p)return alert('Invalid');currentUser={username:u,role:rec.role};localStorage.setItem(USER_KEY,JSON.stringify(currentUser));hide(el('loginBox'));show(el('app'));el('userInfo').textContent=`${u} (${rec.role})`;applyPerms();loadLogs();loadInv();buildActivity();logAction('logged in');}
-function logout(){logAction('logged out');localStorage.removeItem(USER_KEY);location.reload();}
-function applyPerms(){const r=currentUser.role;el('btnAdd').disabled=!(r==='admin'||r==='staff');el('btnSave').disabled=!(r==='admin'||r==='staff');el('btnRemove').disabled=!(r==='admin');el('btnImport').disabled=!(r==='admin');el('btnExport').disabled=!(r==='admin');r==='admin'?show(el('activityLogBox')):hide(el('activityLogBox'));}
+let currentUser=null;
+
+function login(){
+  const u=el('loginUser').value.trim(), p=el('loginPass').value;
+  const rec=USERS[u];
+  if(!rec||rec.password!==p)return alert('Invalid');
+  currentUser={username:u,role:rec.role};
+  localStorage.setItem(USER_KEY,JSON.stringify(currentUser));
+  hide(el('loginBox')); show(el('app'));
+  el('userInfo').textContent=`${u} (${rec.role})`;
+  applyPerms(); loadLogs(); loadInv(); buildActivity();
+  logAction('logged in');
+}
+
+function logout(){
+  logAction('logged out');
+  localStorage.removeItem(USER_KEY);
+  location.reload();
+}
+
+function applyPerms(){
+  const r=currentUser.role;
+  el('btnAdd').disabled=!(r==='admin'||r==='staff');
+  el('btnSave').disabled=!(r==='admin'||r==='staff');
+  el('btnRemove').disabled=!(r==='admin');
+  el('btnImport').disabled=!(r==='admin');
+  el('btnExport').disabled=!(r==='admin');
+  r==='admin'?show(el('activityLogBox')):hide(el('activityLogBox'));
+}
 
 // ---------------- INIT ----------------
 document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('input.upper').forEach(i=>i.addEventListener('input',()=>i.value=i.value.toUpperCase()));
 
-  try{const u=JSON.parse(localStorage.getItem(USER_KEY));if(u){currentUser=u;hide(el('loginBox'));show(el('app'));el('userInfo').textContent=`${u.username} (${u.role})`;applyPerms();loadLogs();loadInv();buildActivity();}}catch{}
-  el('btnLogin').onclick=login;el('btnLogout').onclick=e=>{e.preventDefault();logout();};
+  const saved=localStorage.getItem(USER_KEY);
+  if(saved){
+    currentUser=JSON.parse(saved);
+    hide(el('loginBox')); show(el('app'));
+    el('userInfo').textContent=`${currentUser.username} (${currentUser.role})`;
+    applyPerms(); loadLogs(); loadInv(); buildActivity();
+  }
 
-  ['loginUser','loginPass'].forEach(id=>{el(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();login();}});});
+  el('btnLogin').onclick=login;
+  el('btnLogout').onclick=e=>{e.preventDefault();logout();};
+  ['loginUser','loginPass'].forEach(id=>el(id).addEventListener('keydown',e=>{if(e.key==='Enter')login();}));
 
-  el('btnAdd').onclick=addItem;el('btnSave').onclick=saveItem;el('btnRemove').onclick=delItem;
-  el('btnExport').onclick=exportInventoryCSV;
+  el('btnAdd').onclick=addItem;
+  el('btnSave').onclick=saveItem;
+  el('btnRemove').onclick=delItem;
   el('btnImport').onclick=()=>{const f=el('fileImport').files[0];if(!f)return alert('Select CSV');importFile(f);};
-  el('btnDownloadTemplate').onclick=downloadTemplate;
-
-  el('btnSearch').onclick=()=>{const q=el('searchBox').value.toLowerCase();const f=inventory.filter(r=>FIELDS.some(k=>(r[k]||'').toLowerCase().includes(q)));const b=el('tbodyRows');b.innerHTML='';f.forEach(it=>{const tr=document.createElement('tr');FIELDS.forEach(k=>{const td=document.createElement('td');td.textContent=it[k]||'';tr.appendChild(td);});b.appendChild(tr);});};
+  el('btnExport').onclick=exportInventoryCSV;
+  el('btnDownloadTemplate').onclick=()=>downloadTemplate();
+  el('btnSearch').onclick=()=>{
+    const q=el('searchBox').value.toLowerCase();
+    const rows=inventory.filter(r=>FIELDS.some(f=>(r[f]||'').toLowerCase().includes(q)));
+    const body=el('tbodyRows');body.innerHTML='';
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      FIELDS.forEach(f=>{
+        const td=document.createElement('td');td.textContent=r[f]||'';tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  };
   el('btnShowAll').onclick=buildTable;
   el('btnClearForm').onclick=clearForm;
   el('btnClearSearch').onclick=()=>{el('searchBox').value='';buildTable();};
@@ -396,6 +437,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   el('btnClearLogs').onclick=()=>{if(confirm('Clear logs?')){activityLog=[];saveLogs();buildActivity();setActionMsg('Logs Cleared');}};
 });
 </script>
+
 </body>
 </html>
-
