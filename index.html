@@ -116,7 +116,21 @@
         <button id="btnClearLogs" class="warn">Clear Logs</button>
       </div>
     </div>
-    <table id="activityTable">   <thead>     <tr>       <th>User</th>       <th>Role</th>       <th>Action</th>       <th>Serial Number</th>       <th>Brand</th>       <th>Model Number</th>       <th>Location</th>       <th>Timestamp</th>     </tr>   </thead>   <tbody id="activityBody"></tbody> </table>
+    <table id="activityTable">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Action</th>
+          <th>Serial Number</th>
+          <th>Brand</th>
+          <th>Model Number</th>
+          <th>Location</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="activityBody"></tbody>
+    </table>
   </div>
 </div>
 
@@ -125,6 +139,7 @@ const FIELDS = ['Brand','Model Number','Serial Number','Date Received','Location
 const STORAGE_KEY='linksys_inventory_v1',USER_KEY='linksys_current_user',LOG_KEY='linksys_activity_log';
 
 // --- Google Sync URL ---
+// Replace with your deployed Apps Script web app URL — keep it as is if already correct.
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbwHoZFN9Dhkl0nlPQXW_bRdppdA38JPONoj9UC6Z_FyIuyBmxwD0tXju8o0z23B6oRn/exec";
 
 const USERS={
@@ -137,10 +152,13 @@ const USERS={
 
 let inventory=[],activityLog=[],currentUser=null,selectedIndex=-1;
 
-function el(i){return document.getElementById(i);}function show(e){e.classList.remove('hidden');}function hide(e){e.classList.add('hidden');}function now(){return new Date().toLocaleString();}
-function setActionMsg(m){const d=el('actionMsg');d.textContent=m;show(d);setTimeout(()=>hide(d),2000);}function dateStamp(){return new Date().toLocaleDateString('en-US').replace(/\//g,'-');}
+function el(i){return document.getElementById(i);}
+function show(e){e.classList.remove('hidden');}
+function hide(e){e.classList.add('hidden');}
+function now(){return new Date().toLocaleString();}
+function setActionMsg(m){const d=el('actionMsg');d.textContent=m;show(d);setTimeout(()=>hide(d),2000);}
+function dateStamp(){return new Date().toLocaleDateString('en-US').replace(/\//g,'-');}
 
-// ---------------- GOOGLE SYNC ----------------
 // ---------------- GOOGLE SYNC ----------------
 async function syncInventory(record){
   try {
@@ -169,7 +187,37 @@ async function syncActivityLog(entry){
 }
 
 // ---------------- LOGGING ----------------
-function loadLogs(){try{activityLog=JSON.parse(localStorage.getItem(LOG_KEY))||[]}catch{activityLog=[];}}
+function loadLogs(){
+  try {
+    let raw = localStorage.getItem(LOG_KEY);
+    let arr = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(arr)) arr = [];
+
+    // detect if migration needed: look for missing keys on any item
+    const needsMigration = arr.some(item => !('serial' in item) || !('brand' in item) || !('model' in item) || !('location' in item));
+
+    if (needsMigration) {
+      arr = arr.map(item => ({
+        user: item.user || item.User || '',
+        role: item.role || item.Role || '',
+        action: item.action || item.Action || '',
+        serial: (item.serial || item.Serial || item['Serial Number'] || '') ,
+        brand: (item.brand || item.Brand || ''),
+        model: (item.model || item.Model || item['Model Number'] || ''),
+        location: (item.location || item.Location || ''),
+        time: item.time || item.Time || item.timestamp || item.Timestamp || (new Date()).toLocaleString()
+      }));
+      // save migrated structure
+      localStorage.setItem(LOG_KEY, JSON.stringify(arr));
+      console.log('Activity log auto-migrated to new schema.');
+    }
+
+    activityLog = arr;
+  } catch (err) {
+    console.error('loadLogs error', err);
+    activityLog = [];
+  }
+}
 function saveLogs(){localStorage.setItem(LOG_KEY,JSON.stringify(activityLog));}
 
 function logAction(a){
@@ -199,17 +247,17 @@ function logAction(a){
   // update UI lastAction
   el('lastAction').textContent = `${e.user} ${e.action} (SN: ${serial || '—'}) at ${e.time}`;
 
-  // refresh activity table for admins
+  // refresh activity table for admins (and always keep data accurate)
   if (currentUser.role === 'admin') buildActivity();
 
-  // SYNC TO GOOGLE SHEETS - include new fields
+  // SYNC TO GOOGLE SHEETS - include new fields and use "Model Number" key for backend mapping
   syncActivityLog({
     User: e.user,
     Role: e.role,
     Action: e.action,
     Serial: e.serial,
     Brand: e.brand,
-    Model: e.model,
+    "Model Number": e.model,
     Location: e.location
   });
 }
@@ -230,11 +278,21 @@ function buildActivity(){
 }
 
 // ---------------- EXPORT ----------------
-function exportInventoryCSV(){const csv=FIELDS.join(',')+'\n'+inventory.map(r=>FIELDS.map(f=>`"${(r[f]||'').replace(/"/g,'""')}"`).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`inventory_export_${dateStamp()}.csv`;a.click();URL.revokeObjectURL(a.href);setActionMsg('Exported Inventory');logAction('exported inventory');}
+function exportInventoryCSV(){
+  const csv = FIELDS.join(',') + '\n' + inventory.map(r => FIELDS.map(f => `"${(r[f]||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `inventory_export_${dateStamp()}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setActionMsg('Exported Inventory');
+  logAction('exported inventory');
+}
+
 function exportLogs(){
   const csvHeader = 'User,Role,Action,Serial Number,Brand,Model Number,Location,Timestamp\n';
   const csvRows = activityLog.map(l => {
-    // escape double quotes in each field
     const esc = v => `"${(v || '').toString().replace(/"/g,'""')}"`;
     return [
       esc(l.user),
@@ -261,9 +319,34 @@ function exportLogs(){
 function saveInv(){localStorage.setItem(STORAGE_KEY,JSON.stringify(inventory));}
 function loadInv(){try{inventory=JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch{inventory=[];}buildTable();}
 
-function buildTable(){const h=el('theadRow'),b=el('tbodyRows');h.innerHTML='';b.innerHTML='';FIELDS.forEach(f=>{const th=document.createElement('th');th.textContent=f;h.appendChild(th);});inventory.forEach((it,i)=>{const tr=document.createElement('tr');tr.classList.add('clickable');tr.onclick=()=>loadToForm(i);FIELDS.forEach(f=>{const td=document.createElement('td');td.textContent=it[f]||'';tr.appendChild(td);});b.appendChild(tr);});}
+function buildTable(){
+  const h = el('theadRow'), b = el('tbodyRows');
+  h.innerHTML = ''; b.innerHTML = '';
+  FIELDS.forEach(f => { const th = document.createElement('th'); th.textContent = f; h.appendChild(th); });
+  inventory.forEach((it,i) => {
+    const tr = document.createElement('tr');
+    tr.classList.add('clickable');
+    tr.onclick = () => loadToForm(i);
+    FIELDS.forEach(f => {
+      const td = document.createElement('td');
+      td.textContent = it[f] || '';
+      tr.appendChild(td);
+    });
+    b.appendChild(tr);
+  });
+}
 
-function loadToForm(i){selectedIndex=i;const it=inventory[i]||{};el('fBrand').value=it['Brand']||'';el('fModel').value=it['Model Number']||'';el('fSerial').value=it['Serial Number']||'';el('fDate').value=it['Date Received']||'';el('fLocation').value=it['Location']||'';el('fTracking').value=it['Tracking Number']||'';el('fRemarks').value=it['Remarks']||'';}
+function loadToForm(i){
+  selectedIndex=i;
+  const it=inventory[i]||{};
+  el('fBrand').value=it['Brand']||'';
+  el('fModel').value=it['Model Number']||'';
+  el('fSerial').value=it['Serial Number']||'';
+  el('fDate').value=it['Date Received']||'';
+  el('fLocation').value=it['Location']||'';
+  el('fTracking').value=it['Tracking Number']||'';
+  el('fRemarks').value=it['Remarks']||'';
+}
 
 function capture(){return {
   'Brand':(el('fBrand').value||'').toUpperCase(),
@@ -315,4 +398,3 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
-
