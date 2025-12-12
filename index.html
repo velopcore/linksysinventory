@@ -29,21 +29,18 @@
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- LOGIN BOX -->
 <div class="login-box" id="loginBox">
   <h1>🔐 Linksys Inventory — Login</h1>
   <div style="max-width:480px;margin-top:12px;">
     <label>Username</label>
     <input type="text" id="loginUser">
-
     <label>Password</label>
     <input type="password" id="loginPass">
-
     <div style="margin-top:10px;">
       <button id="btnLogin" class="primary">Login</button>
       <button id="btnQuit">Quit</button>
     </div>
-
     <div class="small">Users: admin / edmar / van / viewer</div>
     <div id="loginMsg" class="msg hidden"></div>
   </div>
@@ -51,110 +48,94 @@
 
 <!-- MAIN APP -->
 <div class="app hidden" id="app">
+  <header>
+    <strong>Linksys Inventory System</strong>
+    <div><span id="userInfo" class="small"></span> | <a href="#" id="btnLogout">Logout</a></div>
+  </header>
 
-<header>
-  <strong>Linksys Inventory System</strong>
-  <div><span id="userInfo" class="small"></span> | <a href="#" id="btnLogout">Logout</a></div>
-</header>
-
-<div class="container">
-
-  <!-- LEFT FORM -->
-  <div class="left">
-    <h3>🧾 Item Details</h3>
-
-    <label>Brand</label><input type="text" id="fBrand" class="upper">
-    <label>Model Number</label><input type="text" id="fModel" class="upper">
-    <label>Serial Number</label><input type="text" id="fSerial" class="upper">
-    <label>Date Received</label><input type="text" id="fDate" placeholder="MM/DD/YYYY">
-    <label>Location</label><input type="text" id="fLocation" class="upper">
-    <label>Tracking Number</label><input type="text" id="fTracking" class="upper">
-    <label>Remarks</label><input type="text" id="fRemarks" class="upper">
-
-    <button id="btnClearForm">Clear Item Details</button>
-  </div>
-
-  <!-- RIGHT ACTIONS -->
-  <div class="right">
-    <h3>⚙️ Actions</h3>
-
-    <button id="btnAdd" class="primary">Add Item</button>
-    <button id="btnSave">Save Changes</button>
-
-    <hr>
-    <label>Import / Export</label>
-    <input type="file" id="fileImport" accept=".csv">
-
-    <div>
-      <button id="btnImport">Import</button>
-      <button id="btnExport">Export</button>
+  <div class="container">
+    <!-- LEFT: ITEM FORM -->
+    <div class="left">
+      <h3>🧾 Item Details</h3>
+      <label>Brand</label><input type="text" id="fBrand" class="upper">
+      <label>Model Number</label><input type="text" id="fModel" class="upper">
+      <label>Serial Number</label><input type="text" id="fSerial" class="upper">
+      <label>Date Received</label><input type="text" id="fDate" placeholder="MM/DD/YYYY">
+      <label>Location</label><input type="text" id="fLocation" class="upper">
+      <label>Tracking Number</label><input type="text" id="fTracking" class="upper">
+      <label>Remarks</label><input type="text" id="fRemarks" class="upper">
+      <button id="btnClearForm">Clear Item Details</button>
     </div>
 
-    <hr>
-    <label>Search</label>
-    <input type="text" id="searchBox">
-
-    <div style="display:flex;gap:8px;">
-      <button id="btnSearch">Search</button>
-      <button id="btnShowAll">Show All</button>
-      <button id="btnClearSearch">Clear Search</button>
+    <!-- RIGHT: ACTION PANEL -->
+    <div class="right">
+      <h3>⚙️ Actions</h3>
+      <button id="btnAdd" class="primary">Add Item</button>
+      <button id="btnSave">Save Changes</button>
+      <hr>
+      <label>Import/Export</label>
+      <input type="file" id="fileImport" accept=".csv">
+      <div>
+        <button id="btnImport">Import</button>
+        <button id="btnExport">Export</button>
+      </div>
+      <hr>
+      <label>Search</label>
+      <input type="text" id="searchBox">
+      <div style="display:flex;gap:8px;">
+        <button id="btnSearch">Search</button>
+        <button id="btnShowAll">Show All</button>
+        <button id="btnClearSearch">Clear Search</button>
+      </div>
+      <button id="btnDownloadTemplate">Download CSV Template</button>
+      <div id="actionMsg" class="msg hidden"></div>
     </div>
-
-    <button id="btnDownloadTemplate">Download CSV Template</button>
-
-    <div id="actionMsg" class="msg hidden"></div>
   </div>
 
-</div>
+  <!-- INVENTORY TABLE -->
+  <div class="bottom">
+    <h3>📋 Inventory Table</h3>
+    <div class="small">Last Action: <span id="lastAction">—</span></div>
 
-<!-- INVENTORY TABLE -->
-<div class="bottom">
-  <h3>📋 Inventory Table</h3>
-  <div class="small">Last Action: <span id="lastAction">—</span></div>
+    <div id="tableWrap" style="overflow:auto;">
+      <table id="invTable">
+        <thead><tr id="theadRow"></tr></thead>
+        <tbody id="tbodyRows"></tbody>
+      </table>
+    </div>
+    <div class="small">Click a row to load it into the form.</div>
+  </div>
 
-  <div id="tableWrap" style="overflow:auto;">
-    <table id="invTable">
-      <thead><tr id="theadRow"></tr></thead>
-      <tbody id="tbodyRows"></tbody>
+  <!-- ACTIVITY LOG -->
+  <div class="activity" id="activityLogBox">
+    <h3>🕓 Activity Log</h3>
+    <table id="activityTable">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Action</th>
+          <th>Serial Number</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="activityBody"></tbody>
     </table>
+    <button id="btnExportLogs">Export Logs (CSV)</button>
+    <button id="btnClearLogs" class="warn">Clear Logs</button>
   </div>
-
-  <div class="small">Click a row to load it into the form.</div>
 </div>
-
-<!-- ACTIVITY LOG -->
-<div class="activity" id="activityLogBox">
-  <h3>🕓 Activity Log</h3>
-
-  <table id="activityTable">
-    <thead>
-      <tr>
-        <th>User</th>
-        <th>Role</th>
-        <th>Action</th>
-        <th>Serial Number</th>
-        <th>Timestamp</th>
-      </tr>
-    </thead>
-    <tbody id="activityBody"></tbody>
-  </table>
-
-  <button id="btnExportLogs">Export Logs (CSV)</button>
-  <button id="btnClearLogs" class="warn">Clear Logs</button>
-</div>
-
-</div><!-- end app -->
 
 <script>
-/* ==========================================
-   CONSTANTS & GLOBALS
-========================================== */
+/* ==========================================================
+   CONSTANTS
+========================================================== */
 const FIELDS = ['Brand','Model Number','Serial Number','Date Received','Location','Tracking Number','Remarks'];
 const STORAGE_KEY='linksys_inventory_v1';
 const USER_KEY='linksys_current_user';
 const LOG_KEY='linksys_activity_log';
 
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbyQMK6uKZ2HFz5IReZWeQPzyMIS37agBBhOCcrwaN39U5vnOLYAFC05FrwuUuc6mrpxeQ/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyQMK6uKZ2HFz5IReZWeQPzyMIS37agBBhOCcrwaN39U5vnOLYAFC05FrwuUuc6mrpxeQ/exec"; // <-- paste new WebApp URL here
 
 const USERS={
   admin:{password:'admin123',role:'admin'},
@@ -163,23 +144,18 @@ const USERS={
   viewer:{password:'ViewOnly',role:'viewer'}
 };
 
-let inventory=[];
-let activityLog=[];
-let currentUser=null;
-let selectedIndex=-1;
+let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 
-/* ==========================================
+/* ==========================================================
    HELPERS
-========================================== */
+========================================================== */
 function el(id){return document.getElementById(id);}
-function show(e){e.classList.remove('hidden');}
-function hide(e){e.classList.add('hidden');}
 function now(){return new Date().toLocaleString();}
 function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
 
-/* ==========================================
-   GOOGLE SYNC (CORRECTED)
-========================================== */
+/* ==========================================================
+   GOOGLE SYNC (CORS-SAFE)
+========================================================== */
 async function syncInventory(record){
   try {
     await fetch(SHEET_URL, {
@@ -202,18 +178,18 @@ async function syncActivityLog(entry){
       body: JSON.stringify({ ...entry, Type: "log" })
     });
   } catch (err) {
-    console.error("Log Sync Error:", err);
+    console.error("ActivityLog Sync Error:", err);
   }
 }
 
-/* ==========================================
+/* ==========================================================
    ACTIVITY LOGGING
-========================================== */
-function loadLogs(){ activityLog = JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); }
+========================================================== */
+function loadLogs(){ activityLog = JSON.parse(localStorage.getItem(LOG_KEY)||"[]"); }
 function saveLogs(){ localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); }
 
-function logAction(action, serial=""){
-  if(!currentUser) return;
+function logAction(action, serial="") {
+  if (!currentUser) return;
 
   const entry = {
     user: currentUser.username,
@@ -227,54 +203,52 @@ function logAction(action, serial=""){
   saveLogs();
   buildActivity();
 
-  el('lastAction').textContent =
+  el("lastAction").textContent =
     `${entry.user} ${entry.action} (SN: ${serial || "N/A"}) at ${entry.time}`;
 
   syncActivityLog(entry);
 }
 
-/* ==========================================
-   BUILD ACTIVITY LOG TABLE
-========================================== */
 function buildActivity(){
-  const tbody = el('activityBody');
+  const tbody = el("activityBody");
   tbody.innerHTML = "";
-
   activityLog.forEach(l=>{
-    const tr = document.createElement('tr');
-    ['user','role','action','serial','time'].forEach(key=>{
-      const td = document.createElement('td');
-      td.textContent = l[key] || "";
+    const tr=document.createElement("tr");
+    ['user','role','action','serial','time'].forEach(k=>{
+      const td=document.createElement("td");
+      td.textContent=l[k]||"";
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
   });
 }
 
-/* ==========================================
-   INVENTORY FUNCTIONS
-========================================== */
+/* ==========================================================
+   INVENTORY SYSTEM
+========================================================== */
 function saveInv(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
-function loadInv(){ inventory = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); buildTable(); }
+
+function loadInv(){
+  inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+  buildTable();
+}
 
 function buildTable(){
-  const thead = el('theadRow');
-  const tbody = el('tbodyRows');
+  const thead = el("theadRow");
+  thead.innerHTML = FIELDS.map(f=>`<th>${f}</th>`).join("");
 
-  thead.innerHTML = FIELDS.map(f=>`<th>${f}</th>`).join('');
+  const tbody = el("tbodyRows");
   tbody.innerHTML = "";
 
-  inventory.forEach((item,i)=>{
-    const tr=document.createElement('tr');
-    tr.classList.add('clickable');
+  inventory.forEach((it,i)=>{
+    const tr=document.createElement("tr");
+    tr.classList.add("clickable");
     tr.onclick=()=>loadToForm(i);
-
     FIELDS.forEach(f=>{
-      const td=document.createElement('td');
-      td.textContent=item[f]||"";
+      const td=document.createElement("td");
+      td.textContent=it[f]||"";
       tr.appendChild(td);
     });
-
     tbody.appendChild(tr);
   });
 }
@@ -282,13 +256,13 @@ function buildTable(){
 function loadToForm(i){
   selectedIndex=i;
   const it=inventory[i];
-  el('fBrand').value=it['Brand'];
-  el('fModel').value=it['Model Number'];
-  el('fSerial').value=it['Serial Number'];
-  el('fDate').value=it['Date Received'];
-  el('fLocation').value=it['Location'];
-  el('fTracking').value=it['Tracking Number'];
-  el('fRemarks').value=it['Remarks'];
+  el('fBrand').value = it['Brand'];
+  el('fModel').value = it['Model Number'];
+  el('fSerial').value = it['Serial Number'];
+  el('fDate').value = it['Date Received'];
+  el('fLocation').value = it['Location'];
+  el('fTracking').value = it['Tracking Number'];
+  el('fRemarks').value = it['Remarks'];
 }
 
 function capture(){
@@ -315,10 +289,11 @@ function addItem(){
 
   inventory.unshift(it);
   saveInv();
-  syncInventory(it);
-  logAction("added item", it['Serial Number']);
   buildTable();
   clearForm();
+
+  logAction("added item", it['Serial Number']);
+  syncInventory(it);
 }
 
 function saveItem(){
@@ -328,27 +303,27 @@ function saveItem(){
   inventory[selectedIndex]=it;
 
   saveInv();
-  syncInventory(it);
-  logAction("saved item", it['Serial Number']);
   buildTable();
   clearForm();
+
+  logAction("saved item", it['Serial Number']);
+  syncInventory(it);
 }
 
-/* ==========================================
+/* ==========================================================
    IMPORT / EXPORT
-========================================== */
-function importFile(file){
+========================================================== */
+function importFile(f){
   const reader=new FileReader();
-
   reader.onload=e=>{
     const lines=e.target.result.split(/\r?\n/).filter(Boolean);
     const rows=[];
 
     for(let i=1;i<lines.length;i++){
-      const cols=lines[i].split(',').map(x=>x.replace(/^"|"$/g,''));
-      const obj={};
-      FIELDS.forEach((f,j)=>obj[f]=cols[j]||"");
-      rows.push(obj);
+      const cols = lines[i].split(',').map(x=>x.replace(/^"|"$/g,""));
+      const o={};
+      FIELDS.forEach((f,j)=>o[f]=cols[j]||"");
+      rows.push(o);
     }
 
     inventory=rows;
@@ -356,13 +331,14 @@ function importFile(file){
     buildTable();
     logAction("imported inventory");
   };
-
-  reader.readAsText(file);
+  reader.readAsText(f);
 }
 
 function exportInventoryCSV(){
   const csv = FIELDS.join(',') + '\n' +
-    inventory.map(r => FIELDS.map(f=>`"${(r[f]||"").replace(/"/g,'""')}"`).join(',')).join('\n');
+    inventory.map(r =>
+      FIELDS.map(f => `"${(r[f]||"").replace(/"/g,'""')}"`).join(',')
+    ).join('\n');
 
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');
@@ -375,41 +351,42 @@ function exportInventoryCSV(){
 
 function exportLogs(){
   const csv = "User,Role,Action,Serial Number,Timestamp\n" +
-    activityLog.map(l => 
+    activityLog.map(l =>
       `${l.user},${l.role},"${l.action}","${l.serial||""}",${l.time}`
-    ).join('\n');
+    ).join("\n");
 
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download=`activity_logs_${dateStamp()}.csv`;
+  a.download=`logs_${dateStamp()}.csv`;
   a.click();
 }
 
-/* ==========================================
+/* ==========================================================
    LOGIN SYSTEM
-========================================== */
+========================================================== */
 function login(){
-  const user=el('loginUser').value.trim();
-  const pass=el('loginPass').value;
-  const rec=USERS[user];
+  const u=el('loginUser').value.trim();
+  const p=el('loginPass').value;
+  const rec=USERS[u];
 
-  if(!rec || rec.password!==pass){
-    alert("Invalid credentials");
+  if(!rec || rec.password!==p){
+    alert("Invalid login");
     return;
   }
 
-  currentUser={username:user,role:rec.role};
+  currentUser={username:u,role:rec.role};
   localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
 
-  hide(el('loginBox'));
-  show(el('app'));
+  el('loginBox').classList.add('hidden');
+  el('app').classList.remove('hidden');
 
-  el('userInfo').textContent=`${user} (${rec.role})`;
+  el('userInfo').textContent=`${u} (${rec.role})`;
 
   loadLogs();
   loadInv();
   buildActivity();
+
   logAction("logged in");
 }
 
@@ -419,18 +396,17 @@ function logout(){
   location.reload();
 }
 
-/* ==========================================
-   INITIALIZATION
-========================================== */
+/* ==========================================================
+   INIT
+========================================================== */
 document.addEventListener('DOMContentLoaded',()=>{
 
-  // Auto login session
-  try {
-    const u = JSON.parse(localStorage.getItem(USER_KEY));
+  try{
+    const u=JSON.parse(localStorage.getItem(USER_KEY));
     if(u){
       currentUser=u;
-      hide(el('loginBox'));
-      show(el('app'));
+      el('loginBox').classList.add('hidden');
+      el('app').classList.remove('hidden');
       el('userInfo').textContent=`${u.username} (${u.role})`;
       loadLogs();
       loadInv();
@@ -438,34 +414,34 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   }catch{}
 
-  // Buttons
   el('btnLogin').onclick = login;
-  el('btnLogout').onclick = e => { e.preventDefault(); logout(); };
+  el('btnLogout').onclick = e=>{e.preventDefault(); logout();};
 
   el('btnAdd').onclick = addItem;
   el('btnSave').onclick = saveItem;
   el('btnClearForm').onclick = clearForm;
 
-  el('btnImport').onclick = () => {
-    const f = el('fileImport').files[0];
+  el('btnImport').onclick = ()=>{
+    const f=el('fileImport').files[0];
     if(!f) return alert("Select CSV file");
     importFile(f);
   };
 
   el('btnExport').onclick = exportInventoryCSV;
 
-  el('btnSearch').onclick = () => {
-    const q = el('searchBox').value.toLowerCase();
-    const rows = inventory.filter(r =>
+  el('btnSearch').onclick = ()=>{
+    const q=el('searchBox').value.toLowerCase();
+    const filtered=inventory.filter(r =>
       FIELDS.some(f => (r[f]||"").toLowerCase().includes(q))
     );
 
-    const tbody = el('tbodyRows');
-    tbody.innerHTML = "";
-    rows.forEach(it=>{
-      const tr=document.createElement('tr');
+    const tbody=el("tbodyRows");
+    tbody.innerHTML="";
+
+    filtered.forEach(it=>{
+      const tr=document.createElement("tr");
       FIELDS.forEach(f=>{
-        const td=document.createElement('td');
+        const td=document.createElement("td");
         td.textContent=it[f];
         tr.appendChild(td);
       });
@@ -474,14 +450,15 @@ document.addEventListener('DOMContentLoaded',()=>{
   };
 
   el('btnShowAll').onclick = buildTable;
-  el('btnClearSearch').onclick = () => {
+  el('btnClearSearch').onclick = ()=>{
     el('searchBox').value="";
     buildTable();
   };
 
   el('btnExportLogs').onclick = exportLogs;
-  el('btnClearLogs').onclick = () => {
-    if(confirm("Clear all logs?")){
+
+  el('btnClearLogs').onclick = ()=>{
+    if(confirm("Clear all activity logs?")){
       activityLog=[];
       saveLogs();
       buildActivity();
@@ -493,7 +470,3 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </body>
 </html>
-
-
-
-
