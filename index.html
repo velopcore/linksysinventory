@@ -182,22 +182,28 @@ function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
 ========================================== */
 async function syncInventory(record){
   try {
-    await fetch(SHEET_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({...record, Type:'inventory'})
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ ...record, Type: "inventory" })
     });
-  } catch(err){ console.error('Inventory Sync Error:', err); }
+  } catch (err) {
+    console.error("Inventory Sync Error:", err);
+  }
 }
 
 async function syncActivityLog(entry){
   try {
-    await fetch(SHEET_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({...entry, Type:'log'})
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ ...entry, Type: "log" })
     });
-  } catch(err){ console.error('ActivityLog Sync Error:', err); }
+  } catch (err) {
+    console.error("Log Sync Error:", err);
+  }
 }
 
 /* ==========================================
@@ -487,6 +493,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </body>
 </html>
+
 
 
 
