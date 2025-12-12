@@ -211,7 +211,7 @@ function clearForm(){el('fBrand').value='';el('fModel').value='';el('fSerial').v
 
 function addItem(){const it=capture();if(!it.Brand)return alert('Brand required');inventory.unshift(it);saveInv();syncInventory(it);buildTable();clearForm();setActionMsg('Item Added');logAction('added item');}
 function saveItem(){if(selectedIndex<0)return alert('Select row');const it=capture();inventory[selectedIndex]=it;saveInv();syncInventory(it);buildTable();clearForm();setActionMsg('Changes Saved');logAction('saved item');}
-function delItem(){if(selectedIndex<0)return alert('Select row');if(!confirm('Remove selected?'))return;const removed=inventory[selectedIndex];inventory.splice(selectedIndex,1);saveInv();syncInventory(removed);buildTable();clearForm();setActionMsg('Item Removed');logAction('removed item');}
+//function delItem(){if(selectedIndex<0)return alert('Select row');if(!confirm('Remove selected?'))return;const removed=inventory[selectedIndex];inventory.splice(selectedIndex,1);saveInv();syncInventory(removed);buildTable();clearForm();setActionMsg('Item Removed');logAction('removed item');}
 
 // --------------- IMPORT / TEMPLATE ----------------
 function importFile(f){const r=new FileReader();r.onload=e=>{const lines=e.target.result.split(/\r?\n/).filter(Boolean);let rows=[];for(let i=1;i<lines.length;i++){const p=lines[i].split(',').map(x=>x.replace(/^"|"$/g,''));const o={};FIELDS.forEach((f,j)=>o[f]=p[j]||'');rows.push(o);}inventory=rows;saveInv();buildTable();setActionMsg('Imported Inventory');logAction('imported inventory');};r.readAsText(f);}
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   ['loginUser','loginPass'].forEach(id=>{el(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();login();}});});
 
-  el('btnAdd').onclick=addItem;el('btnSave').onclick=saveItem;el('btnRemove').onclick=delItem;
+  el('btnAdd').onclick=addItem;el('btnSave').onclick=saveItem; // el('btnRemove').onclick=delItem;
   el('btnExport').onclick=exportInventoryCSV;
   el('btnImport').onclick=()=>{const f=el('fileImport').files[0];if(!f)return alert('Select CSV');importFile(f);};
   el('btnDownloadTemplate').onclick=downloadTemplate;
@@ -247,4 +247,5 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
