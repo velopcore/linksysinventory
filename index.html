@@ -171,16 +171,31 @@ async function syncActivityLog(entry){
 function loadLogs(){try{activityLog=JSON.parse(localStorage.getItem(LOG_KEY))||[]}catch{activityLog=[];}}
 function saveLogs(){localStorage.setItem(LOG_KEY,JSON.stringify(activityLog));}
 
-function logAction(a){
-  if(!currentUser)return;
-  const e={user:currentUser.username,role:currentUser.role,action:a,time:now()};
-  activityLog.push(e);
-  saveLogs();
-  el('lastAction').textContent=`${e.user} ${e.action} at ${e.time}`;
-  if(currentUser.role==='admin')buildActivity();
+function logAction(action, serial = "") {
+  if (!currentUser) return;
 
-  // SYNC TO GOOGLE SHEETS
-  syncActivityLog({User:e.user,Role:e.role,Action:e.action});
+  const entry = {
+    user: currentUser.username,
+    role: currentUser.role,
+    action: action,
+    serial: serial,
+    time: now()
+  };
+
+  activityLog.push(entry);
+  saveLogs();
+
+  el('lastAction').textContent = `${entry.user} ${entry.action} (SN: ${serial || "N/A"}) at ${entry.time}`;
+
+  if (currentUser.role === 'admin') buildActivity();
+
+  // Sync to Google Sheets
+  syncActivityLog({
+    User: entry.user,
+    Role: entry.role,
+    Action: entry.action,
+    Serial: serial,
+  });
 }
 
 function buildActivity(){const b=el('activityBody');b.innerHTML='';activityLog.forEach(l=>{const tr=document.createElement('tr');['user','role','action','time'].forEach(k=>{const td=document.createElement('td');td.textContent=l[k];tr.appendChild(td);});b.appendChild(tr);});}
@@ -247,6 +262,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
 
 
