@@ -155,13 +155,21 @@ function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
 /* ================ SYNC FUNCTIONS ================ */
 async function syncInventory(record){
   try{
-    await fetch(SHEET_URL,{method:'POST',mode:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...record,Type:'inventory'})});
+    await fetch(SHEET_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({...record,Type:'inventory'})
+    });
   }catch(e){console.error(e);}
 }
 
 async function syncActivityLog(entry){
   try{
-    await fetch(SHEET_URL,{method:'POST',mode:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...entry,Type:'log'})});
+    await fetch(SHEET_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({...entry,Type:'log'})
+    });
   }catch(e){console.error(e);}
 }
 
@@ -408,5 +416,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
 
