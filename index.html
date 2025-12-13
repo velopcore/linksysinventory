@@ -5,7 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Linksys Inventory System (Standalone + Google Sync)</title>
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:12px; color:#111; background:#f7f8fb; }
+  body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #111;
+  background: #f7f8fb;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+  .app.hidden {
+  display: none;
+}
+
+.app:not(.hidden) {
+  width: 100%;
+}
+
   header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   h1 { font-size:18px; margin:0; }
   .login-box, .app { border:1px solid #ddd; border-radius:8px; padding:12px; max-width:1100px; margin:0 auto; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.04); }
@@ -464,16 +482,6 @@ el('btnShowPass').onclick = () => {
   }catch{}
 
   el('btnLogin').onclick = login;
-  // Enable pressing Enter to login
-['loginUser','loginPass'].forEach(id => {
-  el(id).addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      login();
-    }
-  });
-});
-
   el('btnLogout').onclick = e=>{e.preventDefault(); logout();};
 
   el('btnAdd').onclick = addItem;
@@ -489,24 +497,26 @@ el('btnShowPass').onclick = () => {
   el('btnExport').onclick = exportInventoryCSV;
 
   el('btnSearch').onclick = ()=>{
-    const q=el('searchBox').value.toLowerCase();
-    const filtered=inventory.filter(r =>
-      FIELDS.some(f => (r[f]||"").toLowerCase().includes(q))
-    );
+  const q = el('searchBox').value.toLowerCase();
 
-    const tbody=el("tbodyRows");
-    tbody.innerHTML="";
+  const filtered = inventory
+    .filter(r => FIELDS.some(f => (r[f]||"").toLowerCase().includes(q)))
+    .slice(0, 10); // 🔥 limit to 10
 
-    filtered.forEach(it=>{
-      const tr=document.createElement("tr");
-      FIELDS.forEach(f=>{
-        const td=document.createElement("td");
-        td.textContent=it[f];
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
+  const tbody = el("tbodyRows");
+  tbody.innerHTML = "";
+
+  filtered.forEach(it=>{
+    const tr=document.createElement("tr");
+    FIELDS.forEach(f=>{
+      const td=document.createElement("td");
+      td.textContent=it[f];
+      tr.appendChild(td);
     });
-  };
+    tbody.appendChild(tr);
+  });
+};
+
 
   el('btnShowAll').onclick = buildTable;
   el('btnClearSearch').onclick = ()=>{
@@ -529,6 +539,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
