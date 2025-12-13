@@ -368,6 +368,30 @@ function saveItem(){
 /* ==========================================================
    IMPORT / EXPORT
 ========================================================== */
+function exportInventoryCSV(){
+  if (inventory.length === 0) {
+    alert("No inventory to export");
+    return;
+  }
+
+  const csv =
+    FIELDS.join(",") + "\n" +
+    inventory.map(item =>
+      FIELDS.map(f =>
+        `"${(item[f] || "").replace(/"/g, '""')}"`
+      ).join(",")
+    ).join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+
+  a.href = URL.createObjectURL(blob);
+  a.download = `inventory_${dateStamp()}.csv`;
+  a.click();
+
+  logAction("exported inventory");
+}
+
 function importFile(f){
   const reader=new FileReader();
   reader.onload=e=>{
@@ -548,6 +572,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
