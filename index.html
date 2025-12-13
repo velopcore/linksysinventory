@@ -408,6 +408,15 @@ function logout(){
 ========================================================== */
 document.addEventListener('DOMContentLoaded',()=>{
 
+['loginUser','loginPass'].forEach(id => {
+  el(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      login();
+    }
+  });
+});
+
   try{
     const u=JSON.parse(localStorage.getItem(USER_KEY));
     if(u){
@@ -477,6 +486,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </body>
 </html>
+
 
 
 
