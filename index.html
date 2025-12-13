@@ -212,11 +212,15 @@ function logAction(action, serial="") {
 function buildActivity(){
   const tbody = el("activityBody");
   tbody.innerHTML = "";
-  activityLog.forEach(l=>{
+
+  // 🔥 Show only the LAST 10 logs (most recent first)
+  const limitedLogs = activityLog.slice(-10).reverse();
+
+  limitedLogs.forEach(l=>{
     const tr=document.createElement("tr");
     ['user','role','action','serial','time'].forEach(k=>{
       const td=document.createElement("td");
-      td.textContent=l[k]||"";
+      td.textContent = l[k] || "";
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -240,13 +244,16 @@ function buildTable(){
   const tbody = el("tbodyRows");
   tbody.innerHTML = "";
 
-  inventory.forEach((it,i)=>{
+  // 🔥 Show only the latest 10 items
+  const limitedItems = inventory.slice(0, 10);
+
+  limitedItems.forEach((it,i)=>{
     const tr=document.createElement("tr");
     tr.classList.add("clickable");
     tr.onclick=()=>loadToForm(i);
     FIELDS.forEach(f=>{
       const td=document.createElement("td");
-      td.textContent=it[f]||"";
+      td.textContent=it[f] || "";
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -470,3 +477,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </body>
 </html>
+
