@@ -431,6 +431,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   }catch{}
 
   el('btnLogin').onclick = login;
+  // Enable pressing Enter to login
+['loginUser','loginPass'].forEach(id => {
+  el(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      login();
+    }
+  });
+});
+
   el('btnLogout').onclick = e=>{e.preventDefault(); logout();};
 
   el('btnAdd').onclick = addItem;
@@ -486,6 +496,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </body>
 </html>
+
 
 
 
