@@ -25,12 +25,31 @@
   tr.clickable:hover { background:#f5fbff; cursor:pointer; }
   .msg { padding:8px; border-radius:6px; background:#eef7ee; border:1px solid #d5ecd6; color:#1a5b2a; margin-top:8px; }
   .hidden { display:none; }
+  .login-logo {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.login-logo img {
+  width: 120px;
+  max-width: 100%;
+}
+
 </style>
 </head>
 <body>
 
 <!-- LOGIN BOX -->
 <div class="login-box" id="loginBox">
+
+  <!-- LOGO -->
+  <div class="login-logo">
+    <img 
+      src="https://www.linksys.com/cdn/shop/files/LNK-Ligature-Symbol_with-TM_White.png?v=1710746742&width=178"
+      alt="Linksys Logo"
+    >
+  </div>
+
   <h1>🔐 Linksys Inventory — Login</h1>
   <div style="max-width:480px;margin-top:12px;">
     <label>Username</label>
@@ -510,6 +529,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
