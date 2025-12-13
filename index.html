@@ -492,6 +492,13 @@ function logout(){
 ========================================================== */
 document.addEventListener('DOMContentLoaded',()=>{
 
+// AUTO CAPS FOR ITEM DETAILS
+document.querySelectorAll('.upper').forEach(input => {
+  input.addEventListener('input', () => {
+    input.value = input.value.toUpperCase();
+  });
+});
+
 el('btnShowPass').onclick = () => {
   const pass = el('loginPass');
   if (pass.type === "password") {
@@ -592,6 +599,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
