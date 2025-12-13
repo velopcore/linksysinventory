@@ -129,6 +129,7 @@
   <!-- INVENTORY TABLE -->
   <div class="bottom">
     <h3>📋 Inventory Table</h3>
+    <button id="btnClearInventory" class="warn">Clear Inventory</button>
     <div class="small">Last Action: <span id="lastAction">—</span></div>
 
     <div id="tableWrap" style="overflow:auto;">
@@ -267,6 +268,17 @@ function buildActivity(){
    INVENTORY SYSTEM
 ========================================================== */
 function saveInv(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
+function clearInventory(){
+  if (!confirm("Clear inventory from THIS browser only?")) return;
+
+  // FRONTEND ONLY — no backend
+  inventory = [];
+  localStorage.removeItem(STORAGE_KEY);
+  buildTable();
+
+  // Log locally
+  logAction("cleared inventory (frontend only)");
+}
 
 function loadInv(){
   inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
@@ -534,6 +546,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
