@@ -138,14 +138,14 @@ const LOG_KEY='linksys_activity_log';
 
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyQMK6uKZ2HFz5IReZWeQPzyMIS37agBBhOCcrwaN39U5vnOLYAFC05FrwuUuc6mrpxeQ/exec"; // <-- paste new WebApp URL here
 
-const USERS={
-  admin:{password:'admin123',role:'admin'},
-  admin:{password:'Th3password!',role:'admin'},
-  carlo:{password:'Concentrix9!',role:'staff'},
-  edmar:{password:'Asdfg12345!',role:'staff'},
-  van:{password:'P1nkR@nger!',role:'staff'},
-  viewer:{password:'ViewOnly',role:'viewer'}
+const USERS = {
+  dennis: { password: 'Th3password!', role: 'admin' },
+  carlo: { password: 'Concentrix9!', role: 'staff' },
+  edmar: { password: 'Asdfg12345!', role: 'staff' },
+  van: { password: 'P1nkR@nger!', role: 'staff' },
+  viewer: { password: 'ViewOnly', role: 'viewer' }
 };
+
 
 let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 
@@ -510,6 +510,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
