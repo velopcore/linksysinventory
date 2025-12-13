@@ -118,7 +118,6 @@
       <input type="text" id="searchBox">
       <div style="display:flex;gap:8px;">
         <button id="btnSearch">Search</button>
-        <button id="btnShowAll">Show All</button>
         <button id="btnClearSearch">Clear Search</button>
       </div>
       <button id="btnDownloadTemplate">Download CSV Template</button>
@@ -578,7 +577,6 @@ if (u.role === "admin") {
     });
   };
 
-  el('btnShowAll').onclick = buildTable;
   el('btnClearSearch').onclick = ()=>{
     el('searchBox').value="";
     buildTable();
@@ -599,6 +597,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
