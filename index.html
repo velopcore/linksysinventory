@@ -389,17 +389,18 @@ function importFile(f){
   reader.readAsText(f);
 }
 
-function exportInventoryCSV(){
-  const csv = FIELDS.join(',') + '\n' +
-    inventory.map(r =>
-      FIELDS.map(f => `"${(r[f]||"").replace(/"/g,'""')}"`).join(',')
-    ).join('\n');
+function downloadCSVTemplate(){
+  const csv =
+    FIELDS.join(",") + "\n" +
+    FIELDS.map(() => "").join(",");
 
-  const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`inventory_${dateStamp()}.csv`;
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+
+  a.href = URL.createObjectURL(blob);
+  a.download = "inventory_template.csv";
   a.click();
+}
 
   logAction("exported inventory");
 }
@@ -506,6 +507,7 @@ el('btnShowPass').onclick = () => {
   };
 
   el('btnExport').onclick = exportInventoryCSV;
+  el('btnDownloadTemplate').onclick = downloadCSVTemplate;
 
   el('btnSearch').onclick = ()=>{
     const q=el('searchBox').value.toLowerCase();
@@ -548,6 +550,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
