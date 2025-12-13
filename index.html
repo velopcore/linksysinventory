@@ -25,19 +25,53 @@
   tr.clickable:hover { background:#f5fbff; cursor:pointer; }
   .msg { padding:8px; border-radius:6px; background:#eef7ee; border:1px solid #d5ecd6; color:#1a5b2a; margin-top:8px; }
   .hidden { display:none; }
+  /* ===== LOGIN ONLY (SAFE TO ADD) ===== */
+.login-box {
+  max-width: 420px;
+  margin: 80px auto;
+}
+
+.login-box h1 {
+  text-align: center;
+}
+
+.login-form {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.login-form input {
+  width: 100%;
+}
+
+.login-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 </style>
 </head>
 <body>
 
 <!-- LOGIN BOX -->
 <div class="login-box" id="loginBox">
+  <div style="text-align:center;margin-bottom:12px;">
+  <img
+    src="https://www.linksys.com/cdn/shop/files/LNK-Ligature-Symbol_with-TM_White.png"
+    style="width:140px;background:#000;padding:10px 16px;border-radius:8px;"
+    alt="Linksys"
+  >
+</div>
+
   <h1>🔐 Linksys Inventory — Login</h1>
-  <div style="max-width:480px;margin-top:12px;">
+  <div class="login-form">
     <label>Username</label>
     <input type="text" id="loginUser">
     <label>Password</label>
     <input type="password" id="loginPass">
-    <div style="margin-top:10px;">
+    <div class="login-buttons">
       <button id="btnLogin" class="primary">Login</button>
       <button id="btnShowPass">Show Password</button>
     </div>
@@ -409,14 +443,6 @@ function logout(){
    INIT
 ========================================================== */
 document.addEventListener('DOMContentLoaded',()=>{
-['loginUser','loginPass'].forEach(id => {
-  el(id).addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      login();
-    }
-  });
-});
 
 el('btnShowPass').onclick = () => {
   const pass = el('loginPass');
@@ -508,6 +534,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
