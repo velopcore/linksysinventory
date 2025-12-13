@@ -129,7 +129,10 @@
   <!-- INVENTORY TABLE -->
   <div class="bottom">
     <h3>📋 Inventory Table</h3>
-    <button id="btnClearInventory" class="warn">Clear Inventory</button>
+    <button id="btnClearInventory" class="warn hidden">
+  Clear Inventory
+</button>
+
     <div class="small">Last Action: <span id="lastAction">—</span></div>
 
     <div id="tableWrap" style="overflow:auto;">
@@ -269,16 +272,20 @@ function buildActivity(){
 ========================================================== */
 function saveInv(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
 function clearInventory(){
+  if (!currentUser || currentUser.role !== "admin") {
+    alert("Access denied. Admin only.");
+    return;
+  }
+
   if (!confirm("Clear inventory from THIS browser only?")) return;
 
-  // FRONTEND ONLY — no backend
   inventory = [];
   localStorage.removeItem(STORAGE_KEY);
   buildTable();
 
-  // Log locally
-  logAction("cleared inventory (frontend only)");
+  logAction("cleared inventory (admin only)");
 }
+
 
 function loadInv(){
   inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
@@ -458,8 +465,14 @@ function login(){
 
   el('loginBox').classList.add('hidden');
   el('app').classList.remove('hidden');
-
   el('userInfo').textContent=`${u} (${rec.role})`;
+  // ADMIN-ONLY UI
+if (rec.role === "admin") {
+  el('btnClearInventory').classList.remove('hidden');
+} else {
+  el('btnClearInventory').classList.add('hidden');
+}
+
 
   loadLogs();
   loadInv();
@@ -497,6 +510,13 @@ el('btnShowPass').onclick = () => {
       el('loginBox').classList.add('hidden');
       el('app').classList.remove('hidden');
       el('userInfo').textContent=`${u.username} (${u.role})`;
+      // ADMIN-ONLY UI (after refresh)
+if (u.role === "admin") {
+  el('btnClearInventory').classList.remove('hidden');
+} else {
+  el('btnClearInventory').classList.add('hidden');
+}
+
       loadLogs();
       loadInv();
       buildActivity();
@@ -572,6 +592,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
