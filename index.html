@@ -6,170 +6,159 @@
 <title>Linksys Inventory System</title>
 
 <style>
-/* =====================
-   GLOBAL
-===================== */
+/* ===== GLOBAL ===== */
 body {
-  min-height: 100vh;
-  margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-  background: #f7f8fb;
+  margin: 12px;
   color: #111;
-}
-
-/* Center login only */
-body:not(.logged-in) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Normal app layout after login */
-body.logged-in {
-  display: block;
-}
-
-/* =====================
-   LOGIN
-===================== */
-.login-box {
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-  width: 100%;
-  max-width: 380px;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-}
-
-.login-logo {
-  text-align: center;
-  margin-bottom: 12px;
-}
-
-.login-logo img {
-  width: 140px;
-  background: #000;
-  padding: 10px 16px;
-  border-radius: 8px;
-}
-
-.login-box h1 {
-  text-align: center;
-  font-size: 18px;
-  margin: 10px 0 16px;
-}
-
-.login-form {
-  max-width: 320px;
-  margin: 0 auto;
-}
-
-.login-form label {
-  font-weight: 600;
-  font-size: 13px;
-  margin-top: 10px;
-  display: block;
-}
-
-.login-form input {
-  width: 100%;
-  padding: 8px;
-  margin-top: 4px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-.btn-row {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-button {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #aaa;
-  background: #f6f6f6;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-button.primary {
-  background: #0366d6;
-  color: #fff;
-  border-color: #0366d6;
-}
-
-.small {
-  font-size: 12px;
-  color: #666;
-  margin-top: 10px;
-  text-align: center;
+  background: #f7f8fb;
 }
 
 .hidden { display:none; }
 
-/* =====================
-   APP LAYOUT
-===================== */
+/* ===== LOGIN ===== */
+.login-box {
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:16px;
+  max-width:420px;
+  margin:80px auto;
+  background:#fff;
+  box-shadow:0 1px 6px rgba(0,0,0,.06);
+}
+
+.login-box h1 {
+  text-align:center;
+  font-size:18px;
+  margin-bottom:12px;
+}
+
+.login-logo {
+  text-align:center;
+  margin-bottom:12px;
+}
+
+.login-logo img {
+  width:140px;
+  background:#000;
+  padding:10px 16px;
+  border-radius:8px;
+}
+
+.login-form {
+  max-width:320px;
+  margin:0 auto;
+}
+
+.login-form label {
+  display:block;
+  font-weight:600;
+  margin-top:8px;
+  font-size:13px;
+}
+
+.login-form input {
+  width:100%;
+  padding:8px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+
+.btn-row {
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:12px;
+}
+
+.small {
+  font-size:12px;
+  color:#666;
+  margin-top:8px;
+  text-align:center;
+}
+
+/* ===== APP ===== */
 .app {
-  max-width: 1100px;
-  margin: 20px auto;
-  background: #fff;
-  padding: 14px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:12px;
+  max-width:1100px;
+  margin:0 auto;
+  background:#fff;
 }
 
 header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
 }
 
 .container {
-  display: flex;
-  gap: 12px;
+  display:flex;
+  gap:12px;
 }
 
 .left, .right {
-  padding: 10px;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  background: #fff;
+  padding:10px;
+  border:1px solid #eee;
+  border-radius:6px;
+  background:#fff;
 }
 
-.left { flex: 2; }
-.right { flex: 1; }
+.left { flex:2; }
+.right { flex:1; }
 
 .bottom, .activity {
-  margin-top: 12px;
-  padding: 8px;
-  border: 1px solid #eee;
-  border-radius: 6px;
+  margin-top:12px;
+  padding:8px;
+  border:1px solid #eee;
+  border-radius:6px;
 }
 
+/* ===== TABLE ===== */
 table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+  width:100%;
+  border-collapse:collapse;
+  margin-top:8px;
 }
 
 th, td {
-  border: 1px solid #e6e6e6;
-  padding: 6px;
+  border:1px solid #e6e6e6;
+  padding:6px;
+  font-size:13px;
 }
 
 th {
-  background: #fafafa;
+  background:#fafafa;
+  font-weight:700;
 }
 
 tr.clickable:hover {
-  background: #f5fbff;
-  cursor: pointer;
+  background:#f5fbff;
+  cursor:pointer;
+}
+
+/* ===== BUTTONS ===== */
+button {
+  padding:8px 12px;
+  border-radius:6px;
+  border:1px solid #aaa;
+  background:#f6f6f6;
+  cursor:pointer;
+}
+
+button.primary {
+  background:#0366d6;
+  color:#fff;
+  border-color:#0366d6;
+}
+
+button.warn {
+  background:#ffefef;
+  color:#a10000;
+  border-color:#f5c2c2;
 }
 </style>
 </head>
@@ -179,7 +168,7 @@ tr.clickable:hover {
 <!-- LOGIN -->
 <div class="login-box" id="loginBox">
   <div class="login-logo">
-    <img src="https://www.linksys.com/cdn/shop/files/LNK-Ligature-Symbol_with-TM_White.png?v=1710746742&width=178">
+    <img src="https://www.linksys.com/cdn/shop/files/LNK-Ligature-Symbol_with-TM_White.png" alt="Linksys">
   </div>
 
   <h1>🔐 Linksys Inventory — Login</h1>
@@ -189,81 +178,79 @@ tr.clickable:hover {
     <input id="loginUser">
 
     <label>Password</label>
-    <input id="loginPass" type="password">
+    <input type="password" id="loginPass">
 
     <div class="btn-row">
-      <button id="btnLogin" class="primary">Login</button>
+      <button class="primary" id="btnLogin">Login</button>
       <button id="btnShowPass">Show Password</button>
     </div>
 
-    <div class="small">
-      Users: dennis / carlo / edmar / van / viewer
-    </div>
+    <div class="small">Users: dennis / carlo / edmar / van / viewer</div>
   </div>
 </div>
 
 <!-- APP -->
 <div class="app hidden" id="app">
-  <header>
-    <strong>Linksys Inventory System</strong>
-    <div><span id="userInfo"></span> | <a href="#" id="btnLogout">Logout</a></div>
-  </header>
 
-  <div class="container">
-    <div class="left">
-      <h3>🧾 Item Details</h3>
-      <label>Brand</label><input id="fBrand">
-      <label>Model Number</label><input id="fModel">
-      <label>Serial Number</label><input id="fSerial">
-      <label>Date Received</label><input id="fDate">
-      <label>Location</label><input id="fLocation">
-      <label>Tracking Number</label><input id="fTracking">
-      <label>Remarks</label><input id="fRemarks">
-      <button id="btnClearForm">Clear</button>
-    </div>
+<header>
+  <strong>Linksys Inventory System</strong>
+  <div><span id="userInfo"></span> | <a href="#" id="btnLogout">Logout</a></div>
+</header>
 
-    <div class="right">
-      <h3>⚙️ Actions</h3>
-      <button id="btnAdd" class="primary">Add Item</button>
-      <button id="btnSave">Save Changes</button>
-    </div>
-  </div>
+<div class="container">
 
-  <div class="bottom">
-    <h3>📋 Inventory</h3>
-    <table>
-      <thead><tr><th>Brand</th><th>Model</th><th>Serial</th></tr></thead>
-      <tbody id="tbodyRows"></tbody>
-    </table>
-  </div>
+<div class="left">
+  <h3>🧾 Item Details</h3>
+  <label>Brand</label><input id="fBrand">
+  <label>Model</label><input id="fModel">
+  <label>Serial</label><input id="fSerial">
+  <label>Date Received</label><input id="fDate">
+  <label>Location</label><input id="fLocation">
+  <label>Tracking</label><input id="fTracking">
+  <label>Remarks</label><input id="fRemarks">
+  <button id="btnClearForm">Clear</button>
+</div>
+
+<div class="right">
+  <h3>⚙️ Actions</h3>
+  <button class="primary" id="btnAdd">Add Item</button>
+  <button id="btnSave">Save Changes</button>
+</div>
+
+</div>
+
+<div class="bottom">
+  <h3>📋 Inventory</h3>
+  <table>
+    <thead><tr><th>Brand</th><th>Model</th><th>Serial</th></tr></thead>
+    <tbody id="tbodyRows"></tbody>
+  </table>
+</div>
+
 </div>
 
 <script>
 const USERS = {
-  dennis:{password:'Th3password!',role:'admin'},
-  carlo:{password:'Concentrix9!',role:'staff'},
-  edmar:{password:'Asdfg12345!',role:'staff'},
-  van:{password:'P1nkR@nger!',role:'staff'},
-  viewer:{password:'ViewOnly',role:'viewer'}
+  dennis:{password:"Th3password!",role:"admin"},
+  carlo:{password:"Concentrix9!",role:"staff"},
+  edmar:{password:"Asdfg12345!",role:"staff"},
+  van:{password:"P1nkR@nger!",role:"staff"},
+  viewer:{password:"ViewOnly",role:"viewer"}
 };
 
-const USER_KEY = 'currentUser';
+const USER_KEY="current_user";
+let inventory=[], selected=-1;
 
 function el(id){return document.getElementById(id);}
 
 function login(){
-  const u = el('loginUser').value.trim();
-  const p = el('loginPass').value;
-  if(!USERS[u] || USERS[u].password !== p){
-    alert('Invalid login');
-    return;
-  }
-
-  localStorage.setItem(USER_KEY, JSON.stringify({u,role:USERS[u].role}));
-  document.body.classList.add('logged-in');
-  el('loginBox').classList.add('hidden');
-  el('app').classList.remove('hidden');
-  el('userInfo').textContent = `${u} (${USERS[u].role})`;
+  const u=el("loginUser").value.trim();
+  const p=el("loginPass").value;
+  if(!USERS[u]||USERS[u].password!==p){alert("Invalid login");return;}
+  localStorage.setItem(USER_KEY,u);
+  el("loginBox").classList.add("hidden");
+  el("app").classList.remove("hidden");
+  el("userInfo").textContent=u+" ("+USERS[u].role+")";
 }
 
 function logout(){
@@ -271,23 +258,18 @@ function logout(){
   location.reload();
 }
 
-el('btnLogin').onclick = login;
-el('btnLogout').onclick = e=>{e.preventDefault();logout();};
-
-el('btnShowPass').onclick = ()=>{
-  const p = el('loginPass');
-  p.type = p.type === 'password' ? 'text' : 'password';
+el("btnLogin").onclick=login;
+el("btnLogout").onclick=e=>{e.preventDefault();logout();};
+el("btnShowPass").onclick=()=>{
+  el("loginPass").type = el("loginPass").type==="password"?"text":"password";
 };
 
-document.addEventListener('DOMContentLoaded',()=>{
-  const u = JSON.parse(localStorage.getItem(USER_KEY));
-  if(u){
-    document.body.classList.add('logged-in');
-    el('loginBox').classList.add('hidden');
-    el('app').classList.remove('hidden');
-    el('userInfo').textContent = `${u.u} (${u.role})`;
-  }
-});
+const saved=localStorage.getItem(USER_KEY);
+if(saved){
+  el("loginBox").classList.add("hidden");
+  el("app").classList.remove("hidden");
+  el("userInfo").textContent=saved+" ("+USERS[saved].role+")";
+}
 </script>
 
 </body>
