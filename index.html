@@ -68,6 +68,28 @@
   padding: 10px 16px;
   border-radius: 8px;
 }
+/* Center and control login form width */
+.login-form {
+  max-width: 320px;      /* 👈 controls input length */
+  margin: 12px auto 0;   /* 👈 centers horizontally */
+}
+
+/* Center labels */
+.login-form label {
+  text-align: left;
+}
+
+/* Inputs look cleaner */
+.login-form input {
+  width: 100%;
+}
+/* Center login buttons */
+.login-form .btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
 
 </style>
 </head>
@@ -85,16 +107,26 @@
   </div>
 
   <h1>🔐 Linksys Inventory — Login</h1>
-  <div style="max-width:480px;margin-top:12px;">
-    <label>Username</label>
-    <input type="text" id="loginUser">
-    <label>Password</label>
-    <input type="password" id="loginPass">
-    <div style="margin-top:10px;">
-      <button id="btnLogin" class="primary">Login</button>
-      <button id="btnShowPass">Show Password</button>
+  <div class="login-form">
+    <div class="login-form">
 
-    </div>
+  <label>Username</label>
+  <input type="text" id="loginUser">
+
+  <label>Password</label>
+  <input type="password" id="loginPass">
+
+  <div class="btn-row">
+    <button id="btnLogin" class="primary">Login</button>
+    <button id="btnShowPass">Show Password</button>
+  </div>
+
+  <div class="small">
+    Users: dennis / carlo / edmar / van / viewer
+  </div>
+
+</div>
+
     <div class="small">Users: dennis / carlo / edmar / van / viewer</div>
     <div id="loginMsg" class="msg hidden"></div>
   </div>
@@ -555,6 +587,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
