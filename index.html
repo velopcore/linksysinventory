@@ -3,45 +3,43 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Linksys Inventory System (Standalone + Google Sync)</title>
+<title>Linksys Inventory System</title>
 
 <style>
-/* ===============================
+/* =====================
    GLOBAL
-================================ */
+===================== */
 body {
   min-height: 100vh;
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color: #111;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
   background: #f7f8fb;
+  color: #111;
+}
 
+/* Center login only */
+body:not(.logged-in) {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* Normal app layout after login */
 body.logged-in {
   display: block;
 }
 
-/* ===============================
+/* =====================
    LOGIN
-================================ */
+===================== */
 .login-box {
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 20px;
-  max-width: 420px;
   width: 100%;
+  max-width: 380px;
   background: #fff;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
-}
-
-.login-box h1 {
-  text-align: center;
-  font-size: 18px;
-  margin: 8px 0 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 .login-logo {
@@ -56,38 +54,37 @@ body.logged-in {
   border-radius: 8px;
 }
 
+.login-box h1 {
+  text-align: center;
+  font-size: 18px;
+  margin: 10px 0 16px;
+}
+
 .login-form {
   max-width: 320px;
   margin: 0 auto;
 }
 
 .login-form label {
-  display: block;
   font-weight: 600;
-  margin-top: 8px;
   font-size: 13px;
+  margin-top: 10px;
+  display: block;
 }
 
 .login-form input {
   width: 100%;
   padding: 8px;
+  margin-top: 4px;
   border-radius: 6px;
   border: 1px solid #ccc;
-  font-size: 13px;
 }
 
-.login-form .btn-row {
+.btn-row {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-top: 12px;
-}
-
-.small {
-  font-size: 12px;
-  color: #666;
-  margin-top: 8px;
-  text-align: center;
+  margin-top: 14px;
 }
 
 button {
@@ -105,21 +102,25 @@ button.primary {
   border-color: #0366d6;
 }
 
-/* ===============================
-   APP
-================================ */
-.app.hidden {
-  display: none;
+.small {
+  font-size: 12px;
+  color: #666;
+  margin-top: 10px;
+  text-align: center;
 }
 
+.hidden { display:none; }
+
+/* =====================
+   APP LAYOUT
+===================== */
 .app {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
   max-width: 1100px;
   margin: 20px auto;
   background: #fff;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
 }
 
 header {
@@ -149,13 +150,11 @@ header {
   padding: 8px;
   border: 1px solid #eee;
   border-radius: 6px;
-  background: #fff;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
   font-size: 13px;
 }
 
@@ -166,10 +165,12 @@ th, td {
 
 th {
   background: #fafafa;
-  font-weight: 700;
 }
 
-.hidden { display: none; }
+tr.clickable:hover {
+  background: #f5fbff;
+  cursor: pointer;
+}
 </style>
 </head>
 
@@ -208,53 +209,85 @@ th {
     <div><span id="userInfo"></span> | <a href="#" id="btnLogout">Logout</a></div>
   </header>
 
-  <p>✅ App content continues here (unchanged from your version)</p>
+  <div class="container">
+    <div class="left">
+      <h3>🧾 Item Details</h3>
+      <label>Brand</label><input id="fBrand">
+      <label>Model Number</label><input id="fModel">
+      <label>Serial Number</label><input id="fSerial">
+      <label>Date Received</label><input id="fDate">
+      <label>Location</label><input id="fLocation">
+      <label>Tracking Number</label><input id="fTracking">
+      <label>Remarks</label><input id="fRemarks">
+      <button id="btnClearForm">Clear</button>
+    </div>
+
+    <div class="right">
+      <h3>⚙️ Actions</h3>
+      <button id="btnAdd" class="primary">Add Item</button>
+      <button id="btnSave">Save Changes</button>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <h3>📋 Inventory</h3>
+    <table>
+      <thead><tr><th>Brand</th><th>Model</th><th>Serial</th></tr></thead>
+      <tbody id="tbodyRows"></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
 const USERS = {
-  dennis:{password:"Th3password!",role:"admin"},
-  carlo:{password:"Concentrix9!",role:"staff"},
-  edmar:{password:"Asdfg12345!",role:"staff"},
-  van:{password:"P1nkR@nger!",role:"staff"},
-  viewer:{password:"ViewOnly",role:"viewer"}
+  dennis:{password:'Th3password!',role:'admin'},
+  carlo:{password:'Concentrix9!',role:'staff'},
+  edmar:{password:'Asdfg12345!',role:'staff'},
+  van:{password:'P1nkR@nger!',role:'staff'},
+  viewer:{password:'ViewOnly',role:'viewer'}
 };
 
-const el = id => document.getElementById(id);
+const USER_KEY = 'currentUser';
+
+function el(id){return document.getElementById(id);}
 
 function login(){
-  const u = el("loginUser").value.trim();
-  const p = el("loginPass").value;
-  const rec = USERS[u];
-
-  if(!rec || rec.password !== p){
-    alert("Invalid login");
+  const u = el('loginUser').value.trim();
+  const p = el('loginPass').value;
+  if(!USERS[u] || USERS[u].password !== p){
+    alert('Invalid login');
     return;
   }
 
-  document.body.classList.add("logged-in");
-  el("loginBox").classList.add("hidden");
-  el("app").classList.remove("hidden");
-  el("userInfo").textContent = `${u} (${rec.role})`;
+  localStorage.setItem(USER_KEY, JSON.stringify({u,role:USERS[u].role}));
+  document.body.classList.add('logged-in');
+  el('loginBox').classList.add('hidden');
+  el('app').classList.remove('hidden');
+  el('userInfo').textContent = `${u} (${USERS[u].role})`;
 }
 
-el("btnLogin").onclick = login;
-
-el("btnShowPass").onclick = ()=>{
-  const p = el("loginPass");
-  p.type = p.type === "password" ? "text" : "password";
-};
-
-["loginUser","loginPass"].forEach(id=>{
-  el(id).addEventListener("keydown",e=>{
-    if(e.key==="Enter"){ login(); }
-  });
-});
-
-el("btnLogout").onclick = e=>{
-  e.preventDefault();
+function logout(){
+  localStorage.removeItem(USER_KEY);
   location.reload();
+}
+
+el('btnLogin').onclick = login;
+el('btnLogout').onclick = e=>{e.preventDefault();logout();};
+
+el('btnShowPass').onclick = ()=>{
+  const p = el('loginPass');
+  p.type = p.type === 'password' ? 'text' : 'password';
 };
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const u = JSON.parse(localStorage.getItem(USER_KEY));
+  if(u){
+    document.body.classList.add('logged-in');
+    el('loginBox').classList.add('hidden');
+    el('app').classList.remove('hidden');
+    el('userInfo').textContent = `${u.u} (${u.role})`;
+  }
+});
 </script>
 
 </body>
