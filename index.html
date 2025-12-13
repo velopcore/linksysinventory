@@ -399,25 +399,32 @@ function exportInventoryCSV(){
 }
 
 function importFile(f){
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const lines=e.target.result.split(/\r?\n/).filter(Boolean);
-    const rows=[];
+  const reader = new FileReader();
 
-    for(let i=1;i<lines.length;i++){
-      const cols = lines[i].split(',').map(x=>x.replace(/^"|"$/g,""));
-      const o={};
-      FIELDS.forEach((f,j)=>o[f]=cols[j]||"");
+  reader.onload = e => {
+    const lines = e.target.result.split(/\r?\n/).filter(Boolean);
+    const rows = [];
+
+    for(let i = 1; i < lines.length; i++){
+      const cols = lines[i].split(',').map(x => x.replace(/^"|"$/g,""));
+      const o = {};
+      FIELDS.forEach((f,j) => o[f] = cols[j] || "");
       rows.push(o);
     }
 
-    inventory=rows;
+    inventory = rows;
     saveInv();
     buildTable();
+
+    // ✅ SEND TO GOOGLE SHEETS
+    rows.forEach(item => syncInventory(item));
+
     logAction("imported inventory");
   };
+
   reader.readAsText(f);
 }
+
 
 function downloadCSVTemplate(){
   const csv =
@@ -597,6 +604,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
