@@ -39,7 +39,7 @@
     <input type="password" id="loginPass">
     <div style="margin-top:10px;">
       <button id="btnLogin" class="primary">Login</button>
-      <button id="btnQuit">Quit</button>
+      <button id="btnShowPass">Show Password</button>
     </div>
     <div class="small">Users: dennis / carlo / edmar / van / viewer</div>
     <div id="loginMsg" class="msg hidden"></div>
@@ -418,6 +418,17 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 });
 
+el('btnShowPass').onclick = () => {
+  const pass = el('loginPass');
+  if (pass.type === "password") {
+    pass.type = "text";
+    el('btnShowPass').textContent = "Hide Password";
+  } else {
+    pass.type = "password";
+    el('btnShowPass').textContent = "Show Password";
+  }
+};
+
   try{
     const u=JSON.parse(localStorage.getItem(USER_KEY));
     if(u){
@@ -497,6 +508,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </body>
 </html>
+
 
 
 
