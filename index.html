@@ -438,12 +438,26 @@ if (
     inventory = rows;
     saveInv();
     buildTable();
+    await syncInventoryBulk(rows);
+
 
     // ✅ Sync each row to Google Sheets (safe, no overload)
-    for (const item of rows) {
-      await syncInventory(item);
-      await new Promise(r => setTimeout(r, 120)); // small delay
-    }
+    async function syncInventoryBulk(rows) {
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        Type: "inventory_bulk",
+        rows
+      })
+    });
+  } catch (err) {
+    console.error("Bulk sync failed", err);
+  }
+}
+
 
     logAction(`imported ${rows.length} items`);
   };
@@ -631,6 +645,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
