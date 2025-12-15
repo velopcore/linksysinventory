@@ -401,15 +401,41 @@ function exportInventoryCSV(){
 function importFile(f){
   const reader = new FileReader();
 
-  reader.onload = e => {
-    const lines = e.target.result.split(/\r?\n/).filter(Boolean);
+  reader.onload = async e => {
+    const lines = e.target.result
+      .split(/\r?\n/)
+      .filter(line => line.trim().length > 0);
+
     const rows = [];
 
     for(let i = 1; i < lines.length; i++){
-      const cols = lines[i].split(',').map(x => x.replace(/^"|"$/g,""));
-      const o = {};
-      FIELDS.forEach((f,j) => o[f] = cols[j] || "");
-      rows.push(o);
+      const cols = lines[i]
+        .match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
+        ?.map(c => c.replace(/^"|"$/g, "").trim()) || [];
+
+      if (cols.length < FIELDS.length) continue;
+
+      const obj = {};
+      FIELDS.forEach((f,j) => {
+        obj[f] = (cols[j] || "").toUpperCase();
+      });
+
+      rows.push(obj);
+    }
+
+    inventory = rows;
+    saveInv();
+    buildTable();
+
+    // ✅ SAFE Google Sheets sync
+    await syncImportedRowsSequentially(rows);
+
+    logAction(`imported ${rows.length} items`);
+  };
+
+  reader.readAsText(f);
+}
+
     }
 
     inventory = rows;
@@ -604,6 +630,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
