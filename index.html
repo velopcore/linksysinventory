@@ -427,7 +427,10 @@ if (!/^\d{2}\/\d{2}\/\d{4}$/.test(obj['Date Received'])) {
 }
 
 // ✅ Skip duplicate Serial Numbers
-if (rows.some(r => r['Serial Number'] === obj['Serial Number'])) continue;
+if (
+  rows.some(r => r['Serial Number'] === obj['Serial Number']) ||
+  inventory.some(r => r['Serial Number'] === obj['Serial Number'])
+) continue;
 
       rows.push(obj);
     }
@@ -628,6 +631,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
