@@ -194,6 +194,22 @@ function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
 /* ==========================================================
    GOOGLE SYNC (CORS-SAFE)
 ========================================================== */
+async function syncInventoryBulk(rows) {
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        Type: "inventory_bulk",
+        rows
+      })
+    });
+  } catch (err) {
+    console.error("Bulk sync failed", err);
+  }
+}
+
 async function syncInventory(record){
   try {
     await fetch(SHEET_URL, {
@@ -397,6 +413,18 @@ function exportInventoryCSV(){
 
   logAction("exported inventory");
 }
+function normalizeDate(d) {
+  if (!d) return "";
+  const parts = d.split("/");
+  if (parts.length === 3) {
+    return (
+      parts[0].padStart(2, "0") + "/" +
+      parts[1].padStart(2, "0") + "/" +
+      parts[2]
+    );
+  }
+  return "";
+}
 
 function importFile(f){
   const reader = new FileReader();
@@ -420,6 +448,8 @@ function importFile(f){
 FIELDS.forEach((f, j) => {
   obj[f] = (cols[j] || "").toUpperCase();
 });
+  obj['Date Received'] = normalizeDate(obj['Date Received']);
+
 
 // ✅ Enforce MM/DD/YYYY date format
 if (!/^\d{2}\/\d{2}\/\d{4}$/.test(obj['Date Received'])) {
@@ -645,6 +675,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
