@@ -194,7 +194,21 @@ function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
 /* ==========================================================
    GOOGLE SYNC (CORS-SAFE)
 ========================================================== */
-
+async function syncInventoryBulk(rows) {
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        Type: "inventory_bulk",
+        rows
+      })
+    });
+  } catch (err) {
+    console.error("Bulk sync failed", err);
+  }
+    }
 async function syncInventory(record){
   try {
     await fetch(SHEET_URL, {
@@ -452,21 +466,7 @@ if (
 
 
     // ✅ Sync each row to Google Sheets (safe, no overload)
-    async function syncInventoryBulk(rows) {
-  try {
-    await fetch(SHEET_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        Type: "inventory_bulk",
-        rows
-      })
-    });
-  } catch (err) {
-    console.error("Bulk sync failed", err);
-  }
-}
+
 
 
     logAction(`imported ${rows.length} items`);
@@ -655,6 +655,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
