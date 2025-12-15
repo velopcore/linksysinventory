@@ -208,7 +208,8 @@ async function syncInventoryBulk(rows) {
   } catch (err) {
     console.error("Bulk sync failed", err);
   }
-    }
+}
+
 async function syncInventory(record){
   try {
     await fetch(SHEET_URL, {
@@ -655,6 +656,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
