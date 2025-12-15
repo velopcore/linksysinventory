@@ -417,9 +417,17 @@ function importFile(f){
       if (cols.length < FIELDS.length) continue;
 
       const obj = {};
-      FIELDS.forEach((f, j) => {
-        obj[f] = (cols[j] || "").toUpperCase();
-      });
+FIELDS.forEach((f, j) => {
+  obj[f] = (cols[j] || "").toUpperCase();
+});
+
+// ✅ Enforce MM/DD/YYYY date format
+if (!/^\d{2}\/\d{2}\/\d{4}$/.test(obj['Date Received'])) {
+  obj['Date Received'] = "";
+}
+
+// ✅ Skip duplicate Serial Numbers
+if (rows.some(r => r['Serial Number'] === obj['Serial Number'])) continue;
 
       rows.push(obj);
     }
@@ -620,6 +628,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
