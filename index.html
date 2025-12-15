@@ -208,6 +208,7 @@ async function syncInventoryBulk(rows) {
   } catch (err) {
     console.error("Bulk sync failed", err);
   }
+}
 
 async function syncInventory(record){
   try {
@@ -234,6 +235,7 @@ async function syncActivityLog(entry){
     console.error("ActivityLog Sync Error:", err);
   }
 }
+
 
 /* ==========================================================
    ACTIVITY LOGGING
@@ -655,6 +657,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
