@@ -408,15 +408,16 @@ function importFile(f){
 
     const rows = [];
 
-    for(let i = 1; i < lines.length; i++){
+    for (let i = 1; i < lines.length; i++) {
       const cols = lines[i]
         .match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
         ?.map(c => c.replace(/^"|"$/g, "").trim()) || [];
 
+      // ✅ Skip incomplete/broken rows
       if (cols.length < FIELDS.length) continue;
 
       const obj = {};
-      FIELDS.forEach((f,j) => {
+      FIELDS.forEach((f, j) => {
         obj[f] = (cols[j] || "").toUpperCase();
       });
 
@@ -427,8 +428,11 @@ function importFile(f){
     saveInv();
     buildTable();
 
-    // ✅ SAFE Google Sheets sync
-    await syncImportedRowsSequentially(rows);
+    // ✅ Sync each row to Google Sheets (safe, no overload)
+    for (const item of rows) {
+      await syncInventory(item);
+      await new Promise(r => setTimeout(r, 120)); // small delay
+    }
 
     logAction(`imported ${rows.length} items`);
   };
@@ -436,20 +440,6 @@ function importFile(f){
   reader.readAsText(f);
 }
 
-    }
-
-    inventory = rows;
-    saveInv();
-    buildTable();
-
-    // ✅ SEND TO GOOGLE SHEETS
-    rows.forEach(item => syncInventory(item));
-
-    logAction("imported inventory");
-  };
-
-  reader.readAsText(f);
-}
 
 
 function downloadCSVTemplate(){
@@ -630,6 +620,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
