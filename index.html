@@ -481,11 +481,12 @@ const headers = rawHeaders.map(normalizeHeader);
       obj['Date Received'] = normalizeDate(obj['Date Received']);
 
       // ✅ Skip duplicate serial numbers
+      /*
       if (
         rows.some(r => r['Serial Number'] === obj['Serial Number']) ||
         inventory.some(r => r['Serial Number'] === obj['Serial Number'])
       ) continue;
-
+      */
       rows.push(obj);
     }
 
@@ -684,6 +685,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
