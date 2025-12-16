@@ -443,8 +443,14 @@ function importFile(f) {
 
     // ✅ Read header row
     const headers = lines[0]
-      .split(",")
-      .map(h => h.replace(/^"|"$/g, "").trim());
+  .split(",")
+  .map(h =>
+    h
+      .replace(/^"|"$/g, "")
+      .replace(/^\uFEFF/, "") // remove BOM
+      .trim()
+      .toLowerCase()
+  );
 
     const rows = [];
 
@@ -460,9 +466,10 @@ function importFile(f) {
       const obj = {};
 
       // ✅ HEADER-BASED MAPPING (FIXES LOCATION ISSUE)
+
       FIELDS.forEach(field => {
-        const index = headers.indexOf(field);
-        obj[field] = index > -1 ? (cols[index] || "").toUpperCase() : "";
+      const index = headers.indexOf(field.toLowerCase());
+      obj[field] = index > -1 ? (cols[index] || "").toUpperCase() : "";
       });
 
       // ✅ Normalize date
@@ -672,6 +679,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
