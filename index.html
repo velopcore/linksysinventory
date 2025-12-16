@@ -432,23 +432,23 @@ function importFile(f){
 
   reader.onload = async e => {
     const lines = e.target.result
-      .split(/\r?\n/)
-      .filter(line => line.trim().length > 0);
+  .split(/\r?\n/)
+  .map(l => l.trim())
+  .filter(Boolean);
 
-    const rows = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i]
-        .match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
-        ?.map(c => c.replace(/^"|"$/g, "").trim()) || [];
+const headers = lines[0]
+  .split(",")
+  .map(h => h.replace(/^"|"$/g, "").trim());
 
       // ✅ Skip incomplete/broken rows
       if (cols.length < FIELDS.length) continue;
+const obj = {};
 
-      const obj = {};
-FIELDS.forEach((f, j) => {
-  obj[f] = (cols[j] || "").toUpperCase();
+FIELDS.forEach(field => {
+  const index = headers.indexOf(field);
+  obj[field] = index > -1 ? (cols[index] || "").toUpperCase() : "";
 });
+      
   obj['Date Received'] = normalizeDate(obj['Date Received']);
 
 
@@ -657,6 +657,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
