@@ -443,11 +443,11 @@ function importFile(f) {
 
     // ✅ Read header row
     const headers = lines[0]
-  .split(",")
+  .match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
   .map(h =>
     h
       .replace(/^"|"$/g, "")
-      .replace(/^\uFEFF/, "") // remove BOM
+      .replace(/^\uFEFF/, "")
       .trim()
       .toLowerCase()
   );
@@ -679,6 +679,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
