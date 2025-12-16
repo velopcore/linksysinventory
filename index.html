@@ -187,6 +187,13 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 /* ==========================================================
    HELPERS
 ========================================================== */
+function normalizeHeader(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "") // remove spaces & symbols
+    .trim();
+}
+
 function el(id){return document.getElementById(id);}
 function now(){return new Date().toLocaleString();}
 function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
@@ -442,15 +449,12 @@ function importFile(f) {
     }
 
     // ✅ Read header row
-    const headers = lines[0]
+    const rawHeaders = lines[0]
   .match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
-  .map(h =>
-    h
-      .replace(/^"|"$/g, "")
-      .replace(/^\uFEFF/, "")
-      .trim()
-      .toLowerCase()
-  );
+  .map(h => h.replace(/^"|"$/g, "").replace(/^\uFEFF/, "").trim());
+
+const headers = rawHeaders.map(normalizeHeader);
+
 
     const rows = [];
 
@@ -468,9 +472,10 @@ function importFile(f) {
       // ✅ HEADER-BASED MAPPING (FIXES LOCATION ISSUE)
 
       FIELDS.forEach(field => {
-      const index = headers.indexOf(field.toLowerCase());
-      obj[field] = index > -1 ? (cols[index] || "").toUpperCase() : "";
-      });
+  const key = normalizeHeader(field);
+  const index = headers.indexOf(key);
+  obj[field] = index !== -1 ? (cols[index] || "").toUpperCase() : "";
+  });
 
       // ✅ Normalize date
       obj['Date Received'] = normalizeDate(obj['Date Received']);
@@ -679,6 +684,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
