@@ -427,57 +427,72 @@ function normalizeDate(d) {
   return "";
 }
 
-function importFile(f){
+function importFile(f) {
   const reader = new FileReader();
 
   reader.onload = async e => {
     const lines = e.target.result
-  .split(/\r?\n/)
-  .map(l => l.trim())
-  .filter(Boolean);
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(Boolean);
 
-const headers = lines[0]
-  .split(",")
-  .map(h => h.replace(/^"|"$/g, "").trim());
+    if (lines.length < 2) {
+      alert("CSV file is empty or invalid");
+      return;
+    }
 
-      // ✅ Skip incomplete/broken rows
-      if (cols.length < FIELDS.length) continue;
-const obj = {};
+    // ✅ Read header row
+    const headers = lines[0]
+      .split(",")
+      .map(h => h.replace(/^"|"$/g, "").trim());
 
-FIELDS.forEach(field => {
-  const index = headers.indexOf(field);
-  obj[field] = index > -1 ? (cols[index] || "").toUpperCase() : "";
-});
-      
-  obj['Date Received'] = normalizeDate(obj['Date Received']);
+    const rows = [];
 
+    // ✅ Loop through CSV rows
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i]
+        .match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
+        ?.map(c => c.replace(/^"|"$/g, "").trim()) || [];
 
-// ✅ Skip duplicate Serial Numbers
-if (
-  rows.some(r => r['Serial Number'] === obj['Serial Number']) ||
-  inventory.some(r => r['Serial Number'] === obj['Serial Number'])
-) continue;
+      // ✅ Skip broken rows
+      if (cols.length === 0) continue;
+
+      const obj = {};
+
+      // ✅ HEADER-BASED MAPPING (FIXES LOCATION ISSUE)
+      FIELDS.forEach(field => {
+        const index = headers.indexOf(field);
+        obj[field] = index > -1 ? (cols[index] || "").toUpperCase() : "";
+      });
+
+      // ✅ Normalize date
+      obj['Date Received'] = normalizeDate(obj['Date Received']);
+
+      // ✅ Skip duplicate serial numbers
+      if (
+        rows.some(r => r['Serial Number'] === obj['Serial Number']) ||
+        inventory.some(r => r['Serial Number'] === obj['Serial Number'])
+      ) continue;
 
       rows.push(obj);
+    }
+
+    if (rows.length === 0) {
+      alert("No valid rows imported");
+      return;
     }
 
     inventory = [...inventory, ...rows];
     saveInv();
     buildTable();
+
     await syncInventoryBulk(rows);
-
-
-    // ✅ Sync each row to Google Sheets (safe, no overload)
-
-
 
     logAction(`imported ${rows.length} items`);
   };
 
   reader.readAsText(f);
 }
-
-
 
 function downloadCSVTemplate(){
   const csv =
@@ -657,6 +672,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
