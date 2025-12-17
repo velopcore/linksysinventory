@@ -202,43 +202,42 @@ function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
    GOOGLE SYNC (CORS-SAFE)
 ========================================================== */
 async function syncInventoryBulk(rows) {
-  try {
-    await fetch(SHEET_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        Type: "inventory_bulk",
-        rows
-      })
-    });
-  } catch (err) {
+  const res = await fetch(SHEET_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      Type: "inventory_bulk",
+      rows
+    })
+  });
+
+  const text = await res.text();
+  console.log("Bulk sync response:", text);
+}
+
+    catch (err) {
     console.error("Bulk sync failed", err);
   }
 }
 
 async function syncInventory(record){
-  try {
-    await fetch(SHEET_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ ...record, Type: "inventory" })
-    });
-  } catch (err) {
-    console.error("Inventory Sync Error:", err);
-  }
+  const res = await fetch(SHEET_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...record, Type: "inventory" })
+  });
+
+  const text = await res.text();
+  console.log("Single sync:", text);
 }
 
 async function syncActivityLog(entry){
-  try {
-    await fetch(SHEET_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ ...entry, Type: "log" })
-    });
-  } catch (err) {
+  await fetch(SHEET_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...entry, Type: "log" })
+  });
+} catch (err) {
     console.error("ActivityLog Sync Error:", err);
   }
 }
@@ -685,6 +684,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
