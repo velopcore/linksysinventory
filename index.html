@@ -205,7 +205,6 @@ async function syncInventoryBulk(rows) {
   try {
     const res = await fetch(SHEET_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         Type: "inventory_bulk",
         rows
@@ -218,6 +217,7 @@ async function syncInventoryBulk(rows) {
     console.error("Bulk sync failed", err);
   }
 }
+
 
 
 async function syncInventory(record){
@@ -681,5 +681,6 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
