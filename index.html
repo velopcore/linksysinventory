@@ -223,7 +223,6 @@ async function syncInventoryBulk(rows) {
 async function syncInventory(record){
   const res = await fetch(SHEET_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...record, Type: "inventory" })
   });
 
@@ -235,15 +234,12 @@ async function syncActivityLog(entry){
   try {
     await fetch(SHEET_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...entry, Type: "log" })
     });
   } catch (err) {
     console.error("ActivityLog Sync Error:", err);
   }
 }
-
-
 
 /* ==========================================================
    ACTIVITY LOGGING
@@ -685,4 +681,5 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
