@@ -3,164 +3,605 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Linksys Inventory System</title>
-
+<title>Linksys Inventory System (Standalone + Google Sync)</title>
 <style>
-body { font-family: system-ui; margin:12px; background:#f7f8fb; }
-.login-box, .app { max-width:1100px; margin:auto; background:#fff; padding:12px; border-radius:8px; border:1px solid #ddd; }
-.hidden { display:none; }
-.container { display:flex; gap:12px; }
-.left, .right { padding:10px; border:1px solid #eee; border-radius:6px; background:#fff; }
-.left { flex:2; }
-.right { flex:1; }
-label { font-weight:600; margin-top:8px; display:block; }
-input, button { width:100%; padding:8px; margin-top:4px; }
-button.primary { background:#0366d6; color:#fff; border:none; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { border:1px solid #ddd; padding:6px; font-size:13px; }
-th { background:#fafafa; }
-.upper { text-transform:uppercase; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:12px; color:#111; background:#f7f8fb; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  h1 { font-size:18px; margin:0; }
+  .login-box, .app { border:1px solid #ddd; border-radius:8px; padding:12px; max-width:1100px; margin:0 auto; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.04); }
+  .container { display:flex; gap:12px; }
+  .left { flex:2; padding:10px; border:1px solid #eee; border-radius:6px; background:#fff; }
+  .right { flex:1; padding:10px; border:1px solid #eee; border-radius:6px; background:#fff; }
+  .bottom, .activity { margin-top:12px; padding:8px; border:1px solid #eee; border-radius:6px; background:#fff; }
+  label { display:block; font-weight:600; margin-top:8px; font-size:13px; }
+  input[type="text"], input[type="password"], input[type="file"] { width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; font-size:13px; }
+  button { padding:8px 12px; margin-top:8px; border-radius:6px; border:1px solid #aaa; background:#f6f6f6; cursor:pointer; font-size:13px; }
+  button.primary { background:#0366d6; color:#fff; border-color:#0366d6; }
+  button.warn { background:#ffefef; color:#a10000; border-color:#f5c2c2; }
+  .small { font-size:12px; color:#666; margin-top:6px; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:13px; background:#fff; }
+  th, td { border:1px solid #e6e6e6; padding:6px; text-align:left; vertical-align:top; }
+  th { background:#fafafa; font-weight:700; }
+  tr.clickable:hover { background:#f5fbff; cursor:pointer; }
+  .msg { padding:8px; border-radius:6px; background:#eef7ee; border:1px solid #d5ecd6; color:#1a5b2a; margin-top:8px; }
+  .hidden { display:none; }
+  /* ===== LOGIN ONLY (SAFE TO ADD) ===== */
+.login-box {
+  max-width: 420px;
+  margin: 80px auto;
+}
+
+.login-box h1 {
+  text-align: center;
+}
+
+.login-form {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.login-form input {
+  width: 100%;
+}
+
+.login-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 </style>
 </head>
-
 <body>
 
-<!-- LOGIN -->
+<!-- LOGIN BOX -->
 <div class="login-box" id="loginBox">
-  <h2>🔐 Linksys Inventory Login</h2>
-  <label>Username</label>
-  <input id="loginUser">
-  <label>Password</label>
-  <input id="loginPass" type="password">
-  <button id="btnLogin" class="primary">Login</button>
+  <div style="text-align:center;margin-bottom:12px;">
+  <img
+    src="https://www.linksys.com/cdn/shop/files/LNK-Ligature-Symbol_with-TM_White.png"
+    style="width:140px;background:#000;padding:10px 16px;border-radius:8px;"
+    alt="Linksys"
+  >
 </div>
 
-<!-- APP -->
+  <h1>🔐 Linksys Inventory — Login</h1>
+  <div class="login-form">
+    <label>Username</label>
+    <input type="text" id="loginUser">
+    <label>Password</label>
+    <input type="password" id="loginPass">
+    <div class="login-buttons">
+      <button id="btnLogin" class="primary">Login</button>
+      <button id="btnShowPass">Show Password</button>
+    </div>
+    <div class="small">Users: dennis / carlo / edmar / van / viewer</div>
+    <div id="loginMsg" class="msg hidden"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
 <div class="app hidden" id="app">
-  <h2>Linksys Inventory System</h2>
+  <header>
+    <strong>Linksys Inventory System</strong>
+    <div><span id="userInfo" class="small"></span> | <a href="#" id="btnLogout">Logout</a></div>
+  </header>
 
   <div class="container">
+    <!-- LEFT: ITEM FORM -->
     <div class="left">
-      <label>Brand</label><input id="fBrand" class="upper">
-      <label>Model Number</label><input id="fModel" class="upper">
-      <label>Serial Number</label><input id="fSerial" class="upper">
-      <label>Date Received</label><input id="fDate">
-      <label>Location</label><input id="fLocation" class="upper">
-      <label>Tracking Number</label><input id="fTracking" class="upper">
-      <label>Remarks</label><input id="fRemarks" class="upper">
-      <button id="btnAdd" class="primary">Add Item</button>
+      <h3>🧾 Item Details</h3>
+      <label>Brand</label><input type="text" id="fBrand" class="upper">
+      <label>Model Number</label><input type="text" id="fModel" class="upper">
+      <label>Serial Number</label><input type="text" id="fSerial" class="upper">
+      <label>Date Received</label><input type="text" id="fDate" placeholder="MM/DD/YYYY">
+      <label>Location</label><input type="text" id="fLocation" class="upper">
+      <label>Tracking Number</label><input type="text" id="fTracking" class="upper">
+      <label>Remarks</label><input type="text" id="fRemarks" class="upper">
+      <button id="btnClearForm">Clear Item Details</button>
     </div>
 
+    <!-- RIGHT: ACTION PANEL -->
     <div class="right">
-      <label>Import CSV</label>
+      <h3>⚙️ Actions</h3>
+      <button id="btnAdd" class="primary">Add Item</button>
+      <button id="btnSave">Save Changes</button>
+      <hr>
+      <label>Import/Export</label>
       <input type="file" id="fileImport" accept=".csv">
-      <button id="btnImport">Import</button>
+      <div>
+        <button id="btnImport">Import</button>
+        <button id="btnExport">Export</button>
+      </div>
+      <hr>
+      <label>Search</label>
+      <input type="text" id="searchBox">
+      <div style="display:flex;gap:8px;">
+        <button id="btnSearch">Search</button>
+        <button id="btnClearSearch">Clear Search</button>
+      </div>
+      <button id="btnDownloadTemplate">Download CSV Template</button>
+      <div id="actionMsg" class="msg hidden"></div>
     </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Brand</th><th>Model Number</th><th>Serial Number</th>
-        <th>Date Received</th><th>Location</th>
-        <th>Tracking Number</th><th>Remarks</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <!-- INVENTORY TABLE -->
+  <div class="bottom">
+    <h3>📋 Inventory Table</h3>
+    <button id="btnClearInventory" class="warn hidden">
+  Clear Inventory
+</button>
+
+    <div class="small">Last Action: <span id="lastAction">—</span></div>
+
+    <div id="tableWrap" style="overflow:auto;">
+      <table id="invTable">
+        <thead><tr id="theadRow"></tr></thead>
+        <tbody id="tbodyRows"></tbody>
+      </table>
+    </div>
+    <div class="small">Click a row to load it into the form.</div>
+  </div>
+
+  <!-- ACTIVITY LOG -->
+  <div class="activity" id="activityLogBox">
+    <h3>🕓 Activity Log</h3>
+    <table id="activityTable">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Action</th>
+          <th>Serial Number</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="activityBody"></tbody>
+    </table>
+    <button id="btnExportLogs">Export Logs (CSV)</button>
+    <button id="btnClearLogs" class="warn">Clear Logs</button>
+  </div>
 </div>
 
 <script>
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbyQMK6uKZ2HFz5IReZWeQPzyMIS37agBBhOCcrwaN39U5vnOLYAFC05FrwuUuc6mrpxeQ/exec";
+/* ==========================================================
+   CONSTANTS
+========================================================== */
+const FIELDS = ['Brand','Model Number','Serial Number','Date Received','Location','Tracking Number','Remarks'];
+const STORAGE_KEY='linksys_inventory_v1';
+const USER_KEY='linksys_current_user';
+const LOG_KEY='linksys_activity_log';
 
-const USERS = {
-  dennis:"Th3password!",
-  carlo:"Concentrix9!",
-  edmar:"Asdfg12345!",
-  van:"P1nkR@nger!",
-  viewer:"viewer"
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyQMK6uKZ2HFz5IReZWeQPzyMIS37agBBhOCcrwaN39U5vnOLYAFC05FrwuUuc6mrpxeQ/exec"; // <-- paste new WebApp URL here
+
+const USERS={
+  dennis:{password:'Th3password!',role:'admin'},
+  carlo:{password:'Concentrix9!',role:'staff'},
+  edmar:{password:'Asdfg12345!',role:'staff'},
+  van:{password:'P1nkR@nger!',role:'staff'},
+  viewer:{password:'viewer',role:'viewer'}
 };
 
-let inventory=[];
+let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 
-const el=id=>document.getElementById(id);
+/* ==========================================================
+   HELPERS
+========================================================== */
+function el(id){return document.getElementById(id);}
+function now(){return new Date().toLocaleString();}
+function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
 
-/* LOGIN */
-el("btnLogin").onclick=()=>{
-  const u=el("loginUser").value;
-  const p=el("loginPass").value;
-  if(USERS[u]!==p){ alert("Invalid login"); return; }
-  el("loginBox").classList.add("hidden");
-  el("app").classList.remove("hidden");
-};
+/* ==========================================================
+   GOOGLE SYNC (CORS-SAFE)
+========================================================== */
+async function syncInventory(record){
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ ...record, Type: "inventory" })
+    });
+  } catch (err) {
+    console.error("Inventory Sync Error:", err);
+  }
+}
 
-/* ADD ITEM */
+async function syncActivityLog(entry){
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ ...entry, Type: "log" })
+    });
+  } catch (err) {
+    console.error("ActivityLog Sync Error:", err);
+  }
+}
+
+/* ==========================================================
+   ACTIVITY LOGGING
+========================================================== */
+function loadLogs(){ activityLog = JSON.parse(localStorage.getItem(LOG_KEY)||"[]"); }
+function saveLogs(){ localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); }
+
+function logAction(action, serial="") {
+  if (!currentUser) return;
+
+  const entry = {
+    user: currentUser.username,
+    role: currentUser.role,
+    action,
+    serial,
+    time: now()
+  };
+
+  activityLog.push(entry);
+  saveLogs();
+  buildActivity();
+
+  el("lastAction").textContent =
+    `${entry.user} ${entry.action} (SN: ${serial || "N/A"}) at ${entry.time}`;
+
+  syncActivityLog(entry);
+}
+
+function buildActivity(){
+  const tbody = el("activityBody");
+  tbody.innerHTML = "";
+
+  // 🔥 Show only the LAST 10 logs (most recent first)
+  const limitedLogs = activityLog.slice(-10).reverse();
+
+  limitedLogs.forEach(l=>{
+    const tr=document.createElement("tr");
+    ['user','role','action','serial','time'].forEach(k=>{
+      const td=document.createElement("td");
+      td.textContent = l[k] || "";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+
+/* ==========================================================
+   INVENTORY SYSTEM
+========================================================== */
+function saveInv(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
+function clearInventory(){
+  if (!currentUser || currentUser.role !== "admin") {
+    alert("Access denied. Admin only.");
+    return;
+  }
+
+  if (!confirm("Clear inventory from THIS browser only?")) return;
+
+  inventory = [];
+  localStorage.removeItem(STORAGE_KEY);
+  buildTable();
+
+  logAction("cleared inventory (admin only)");
+}
+
+
+function loadInv(){
+  inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+  buildTable();
+}
+
+function buildTable(){
+  const thead = el("theadRow");
+  thead.innerHTML = FIELDS.map(f=>`<th>${f}</th>`).join("");
+
+  const tbody = el("tbodyRows");
+  tbody.innerHTML = "";
+
+  // 🔥 Show only the latest 10 items
+  const limitedItems = inventory.slice(0, 10);
+
+  limitedItems.forEach((it,i)=>{
+    const tr=document.createElement("tr");
+    tr.classList.add("clickable");
+    tr.onclick=()=>loadToForm(i);
+    FIELDS.forEach(f=>{
+      const td=document.createElement("td");
+      td.textContent=it[f] || "";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function loadToForm(i){
+  selectedIndex=i;
+  const it=inventory[i];
+  el('fBrand').value = it['Brand'];
+  el('fModel').value = it['Model Number'];
+  el('fSerial').value = it['Serial Number'];
+  el('fDate').value = it['Date Received'];
+  el('fLocation').value = it['Location'];
+  el('fTracking').value = it['Tracking Number'];
+  el('fRemarks').value = it['Remarks'];
+}
+
 function capture(){
   return {
-    "Brand":el("fBrand").value,
-    "Model Number":el("fModel").value,
-    "Serial Number":el("fSerial").value,
-    "Date Received":el("fDate").value,
-    "Location":el("fLocation").value,
-    "Tracking Number":el("fTracking").value,
-    "Remarks":el("fRemarks").value
+    'Brand': el('fBrand').value.toUpperCase(),
+    'Model Number': el('fModel').value.toUpperCase(),
+    'Serial Number': el('fSerial').value.toUpperCase(),
+    'Date Received': el('fDate').value,
+    'Location': el('fLocation').value.toUpperCase(),
+    'Tracking Number': el('fTracking').value.toUpperCase(),
+    'Remarks': el('fRemarks').value.toUpperCase()
   };
 }
 
-function addRow(item){
-  inventory.push(item);
-  const tr=document.createElement("tr");
-  Object.values(item).forEach(v=>{
-    const td=document.createElement("td");
-    td.textContent=v;
-    tr.appendChild(td);
-  });
-  el("tbody").appendChild(tr);
+function clearForm(){
+  ['fBrand','fModel','fSerial','fDate','fLocation','fTracking','fRemarks']
+    .forEach(id=>el(id).value="");
+  selectedIndex=-1;
 }
 
-el("btnAdd").onclick=()=>{
-  const item=capture();
-  addRow(item);
-  fetch(SHEET_URL,{
-    method:"POST",
-    mode:"no-cors",
-    headers:{ "Content-Type":"text/plain" },
-    body:JSON.stringify({ ...item, Type:"inventory" })
-  });
-};
+function addItem(){
+  const it=capture();
+  if(!it.Brand){ alert("Brand required"); return; }
 
-/* IMPORT (SIMPLE & RELIABLE) */
-el("btnImport").onclick=()=>{
-  const f=el("fileImport").files[0];
-  if(!f) return alert("Select CSV file");
+  inventory.unshift(it);
+  saveInv();
+  buildTable();
+  clearForm();
 
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const lines=e.target.result.split(/\r?\n/).filter(l=>l.trim());
-    for(let i=1;i<lines.length;i++){
-      const c=lines[i].split(",").map(x=>x.replace(/^"|"$/g,""));
-      const item={
-        "Brand":c[0]||"",
-        "Model Number":c[1]||"",
-        "Serial Number":c[2]||"",
-        "Date Received":c[3]||"",
-        "Location":c[4]||"",
-        "Tracking Number":c[5]||"",
-        "Remarks":c[6]||""
-      };
-      addRow(item);
-      fetch(SHEET_URL,{
-        method:"POST",
-        mode:"no-cors",
-        headers:{ "Content-Type":"text/plain" },
-        body:JSON.stringify({ ...item, Type:"inventory" })
-      });
+  logAction("added item", it['Serial Number']);
+  syncInventory(it);
+}
+
+function saveItem(){
+  if(selectedIndex<0){ alert("Select row first"); return; }
+
+  const it=capture();
+  inventory[selectedIndex]=it;
+
+  saveInv();
+  buildTable();
+  clearForm();
+
+  logAction("saved item", it['Serial Number']);
+  syncInventory(it);
+}
+
+/* ==========================================================
+   IMPORT / EXPORT
+========================================================== */
+function exportInventoryCSV(){
+  if (inventory.length === 0) {
+    alert("No inventory to export");
+    return;
+  }
+
+  const csv =
+    FIELDS.join(",") + "\n" +
+    inventory.map(item =>
+      FIELDS.map(f =>
+        `"${(item[f] || "").replace(/"/g, '""')}"`
+      ).join(",")
+    ).join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+
+  a.href = URL.createObjectURL(blob);
+  a.download = `inventory_${dateStamp()}.csv`;
+  a.click();
+
+  logAction("exported inventory");
+}
+
+function importFile(f){
+  const reader = new FileReader();
+
+  reader.onload = e => {
+    const lines = e.target.result.split(/\r?\n/).filter(Boolean);
+    const rows = [];
+
+    for(let i = 1; i < lines.length; i++){
+      const cols = lines[i].split(',').map(x => x.replace(/^"|"$/g,""));
+      const o = {};
+      FIELDS.forEach((f,j) => o[f] = cols[j] || "");
+      rows.push(o);
     }
-    alert("Import completed");
+
+    inventory = rows;
+    saveInv();
+    buildTable();
+
+    // ✅ SEND TO GOOGLE SHEETS
+    rows.forEach(item => syncInventory(item));
+
+    logAction("imported inventory");
   };
+
   reader.readAsText(f);
+}
+
+
+function downloadCSVTemplate(){
+  const csv =
+    FIELDS.join(",") + "\n" +
+    FIELDS.map(() => "").join(",");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+
+  a.href = URL.createObjectURL(blob);
+  a.download = "inventory_template.csv";
+  a.click();
+}
+
+
+function exportLogs(){
+  const csv = "User,Role,Action,Serial Number,Timestamp\n" +
+    activityLog.map(l =>
+      `${l.user},${l.role},"${l.action}","${l.serial||""}",${l.time}`
+    ).join("\n");
+
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`logs_${dateStamp()}.csv`;
+  a.click();
+}
+
+/* ==========================================================
+   LOGIN SYSTEM
+========================================================== */
+function login(){
+  const u=el('loginUser').value.trim();
+  const p=el('loginPass').value;
+  const rec=USERS[u];
+
+  if(!rec || rec.password!==p){
+    alert("Invalid login");
+    return;
+  }
+
+  currentUser={username:u,role:rec.role};
+  localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+
+  el('loginBox').classList.add('hidden');
+  el('app').classList.remove('hidden');
+  el('userInfo').textContent=`${u} (${rec.role})`;
+  // ADMIN-ONLY UI
+if (rec.role === "admin") {
+  el('btnClearInventory').classList.remove('hidden');
+} else {
+  el('btnClearInventory').classList.add('hidden');
+}
+
+
+  loadLogs();
+  loadInv();
+  buildActivity();
+
+  logAction("logged in");
+}
+
+function logout(){
+  logAction("logged out");
+  localStorage.removeItem(USER_KEY);
+  location.reload();
+}
+
+/* ==========================================================
+   INIT
+========================================================== */
+document.addEventListener('DOMContentLoaded',()=>{
+
+// AUTO CAPS FOR ITEM DETAILS
+document.querySelectorAll('.upper').forEach(input => {
+  input.addEventListener('input', () => {
+    input.value = input.value.toUpperCase();
+  });
+});
+
+el('btnShowPass').onclick = () => {
+  const pass = el('loginPass');
+  if (pass.type === "password") {
+    pass.type = "text";
+    el('btnShowPass').textContent = "Hide Password";
+  } else {
+    pass.type = "password";
+    el('btnShowPass').textContent = "Show Password";
+  }
 };
+
+  try{
+    const u=JSON.parse(localStorage.getItem(USER_KEY));
+    if(u){
+      currentUser=u;
+      el('loginBox').classList.add('hidden');
+      el('app').classList.remove('hidden');
+      el('userInfo').textContent=`${u.username} (${u.role})`;
+      // ADMIN-ONLY UI (after refresh)
+if (u.role === "admin") {
+  el('btnClearInventory').classList.remove('hidden');
+} else {
+  el('btnClearInventory').classList.add('hidden');
+}
+
+      loadLogs();
+      loadInv();
+      buildActivity();
+    }
+  }catch{}
+
+  el('btnLogin').onclick = login;
+  // Enable pressing Enter to login
+['loginUser','loginPass'].forEach(id => {
+  el(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      login();
+    }
+  });
+});
+
+  el('btnLogout').onclick = e=>{e.preventDefault(); logout();};
+
+  el('btnAdd').onclick = addItem;
+  el('btnSave').onclick = saveItem;
+  el('btnClearForm').onclick = clearForm;
+  
+  el('btnClearInventory').onclick = clearInventory;
+
+  el('btnImport').onclick = ()=>{
+    const f=el('fileImport').files[0];
+    if(!f) return alert("Select CSV file");
+    importFile(f);
+  };
+
+  el('btnExport').onclick = exportInventoryCSV;
+  el('btnDownloadTemplate').onclick = downloadCSVTemplate;
+
+  el('btnSearch').onclick = ()=>{
+    const q=el('searchBox').value.toLowerCase();
+    const filtered=inventory.filter(r =>
+      FIELDS.some(f => (r[f]||"").toLowerCase().includes(q))
+    );
+
+    const tbody=el("tbodyRows");
+    tbody.innerHTML="";
+
+    filtered.forEach(it=>{
+      const tr=document.createElement("tr");
+      FIELDS.forEach(f=>{
+        const td=document.createElement("td");
+        td.textContent=it[f];
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  };
+
+  el('btnClearSearch').onclick = ()=>{
+    el('searchBox').value="";
+    buildTable();
+  };
+
+  el('btnExportLogs').onclick = exportLogs;
+
+  el('btnClearLogs').onclick = ()=>{
+    if(confirm("Clear all activity logs?")){
+      activityLog=[];
+      saveLogs();
+      buildActivity();
+    }
+  };
+
+});
 </script>
 
 </body>
 </html>
+
