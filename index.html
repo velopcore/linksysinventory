@@ -470,9 +470,15 @@ const headers = rawHeaders.map(normalizeHeader);
 
       FIELDS.forEach(field => {
   const key = normalizeHeader(field);
-  const index = headers.indexOf(key);
-  obj[field] = index !== -1 ? (cols[index] || "").toUpperCase() : "";
-  });
+
+  // find header even if spacing is different
+  const index = headers.findIndex(h => h === key);
+
+  obj[field] = index !== -1
+    ? (cols[index] || "").toUpperCase()
+    : "";
+});
+
 
       // ✅ Normalize date
       obj['Date Received'] = normalizeDate(obj['Date Received']);
@@ -684,6 +690,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
