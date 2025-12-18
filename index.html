@@ -479,12 +479,15 @@ const headers = rawHeaders.map(normalizeHeader);
 
       // ✅ Skip duplicate serial numbers
       
-      if (
-        rows.some(r => r['Serial Number'] === obj['Serial Number']) ||
-        inventory.some(r => r['Serial Number'] === obj['Serial Number'])
-      ) continue;
-      
-      rows.push(obj);
+      const sn = obj['Serial Number'].trim();
+
+if (!sn) continue;
+
+if (
+  rows.some(r => r['Serial Number'] === sn) ||
+  inventory.some(r => r['Serial Number'] === sn)
+) continue;
+
     }
 
     if (rows.length === 0) {
@@ -681,6 +684,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
