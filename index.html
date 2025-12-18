@@ -190,6 +190,15 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 function el(id){return document.getElementById(id);}
 function now(){return new Date().toLocaleString();}
 function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
+function updateRoleUI(role) {
+  const logBox = el('activityLogBox');
+
+  if (role === 'admin') {
+    logBox.classList.remove('hidden');
+  } else {
+    logBox.classList.add('hidden');
+  }
+}
 
 /* ==========================================================
    GOOGLE SYNC (CORS-SAFE)
@@ -472,6 +481,7 @@ function login(){
   el('loginBox').classList.add('hidden');
   el('app').classList.remove('hidden');
   el('userInfo').textContent=`${u} (${rec.role})`;
+  updateRoleUI(rec.role);
   // ADMIN-ONLY UI
 if (rec.role === "admin") {
   el('btnClearInventory').classList.remove('hidden');
@@ -523,6 +533,8 @@ el('btnShowPass').onclick = () => {
       el('loginBox').classList.add('hidden');
       el('app').classList.remove('hidden');
       el('userInfo').textContent=`${u.username} (${u.role})`;
+      updateRoleUI(u.role);
+
       // ADMIN-ONLY UI (after refresh)
 if (u.role === "admin") {
   el('btnClearInventory').classList.remove('hidden');
@@ -604,5 +616,6 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
