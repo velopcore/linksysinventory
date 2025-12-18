@@ -187,13 +187,6 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 /* ==========================================================
    HELPERS
 ========================================================== */
-function normalizeHeader(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "") // remove spaces & symbols
-    .trim();
-}
-
 function el(id){return document.getElementById(id);}
 function now(){return new Date().toLocaleString();}
 function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
@@ -201,39 +194,25 @@ function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
 /* ==========================================================
    GOOGLE SYNC (CORS-SAFE)
 ========================================================== */
-async function syncInventoryBulk(rows) {
-  try {
-    const res = await fetch(SHEET_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        Type: "inventory_bulk",
-        rows
-      })
-    });
-
-    const text = await res.text();
-    console.log("Bulk sync response:", text);
-  } catch (err) {
-    console.error("Bulk sync failed", err);
-  }
-}
-
-
-
 async function syncInventory(record){
-  const res = await fetch(SHEET_URL, {
-    method: "POST",
-    body: JSON.stringify({ ...record, Type: "inventory" })
-  });
-
-  const text = await res.text();
-  console.log("Single sync:", text);
+  try {
+    await fetch(SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ ...record, Type: "inventory" })
+    });
+  } catch (err) {
+    console.error("Inventory Sync Error:", err);
+  }
 }
 
 async function syncActivityLog(entry){
   try {
     await fetch(SHEET_URL, {
       method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ ...entry, Type: "log" })
     });
   } catch (err) {
@@ -418,100 +397,34 @@ function exportInventoryCSV(){
 
   logAction("exported inventory");
 }
-function normalizeDate(d) {
-  if (!d) return "";
-  const parts = d.split("/");
-  if (parts.length === 3) {
-    return (
-      parts[0].padStart(2, "0") + "/" +
-      parts[1].padStart(2, "0") + "/" +
-      parts[2]
-    );
-  }
-  return "";
-}
 
-function importFile(f) {
+function importFile(f){
   const reader = new FileReader();
 
-  reader.onload = async e => {
-    const lines = e.target.result
-      .split(/\r?\n/)
-      .map(l => l.trim())
-      .filter(Boolean);
-
-    if (lines.length < 2) {
-      alert("CSV file is empty or invalid");
-      return;
-    }
-
-    // ✅ Read header row
-    const rawHeaders = lines[0]
-  .match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
-  .map(h => h.replace(/^"|"$/g, "").replace(/^\uFEFF/, "").trim());
-
-const headers = rawHeaders.map(normalizeHeader);
-
-
+  reader.onload = e => {
+    const lines = e.target.result.split(/\r?\n/).filter(Boolean);
     const rows = [];
 
-    // ✅ Loop through CSV rows
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i]
-        .match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
-        ?.map(c => c.replace(/^"|"$/g, "").trim()) || [];
-
-      // ✅ Skip broken rows
-      if (cols.length === 0) continue;
-
-      const obj = {};
-
-      // ✅ HEADER-BASED MAPPING (FIXES LOCATION ISSUE)
-
-      FIELDS.forEach(field => {
-  const key = normalizeHeader(field);
-
-  // find header even if spacing is different
-  const index = headers.findIndex(h => h === key);
-
-  obj[field] = index !== -1
-    ? (cols[index] || "").toUpperCase()
-    : "";
-});
-
-
-      // ✅ Normalize date
-      obj['Date Received'] = normalizeDate(obj['Date Received']);
-
-      // ✅ Skip duplicate serial numbers
-      
-      const sn = obj['Serial Number'].trim();
-
-if (!sn) continue;
-
-if (
-  rows.some(r => r['Serial Number'] === sn) ||
-  inventory.some(r => r['Serial Number'] === sn)
-) continue;
-
+    for(let i = 1; i < lines.length; i++){
+      const cols = lines[i].split(',').map(x => x.replace(/^"|"$/g,""));
+      const o = {};
+      FIELDS.forEach((f,j) => o[f] = cols[j] || "");
+      rows.push(o);
     }
 
-    if (rows.length === 0) {
-      alert("No valid rows imported");
-      return;
-    }
-
-    inventory = [...inventory, ...rows];
+    inventory = rows;
     saveInv();
     buildTable();
 
-    await syncInventoryBulk(rows);
+    // ✅ SEND TO GOOGLE SHEETS
+    rows.forEach(item => syncInventory(item));
 
-    logAction(`imported ${rows.length} items`);
+    logAction("imported inventory");
   };
 
   reader.readAsText(f);
 }
+
 
 function downloadCSVTemplate(){
   const csv =
@@ -544,27 +457,28 @@ function exportLogs(){
    LOGIN SYSTEM
 ========================================================== */
 function login(){
-  const u = el('loginUser').value.trim().toLowerCase();
-  const p = el('loginPass').value;
-  const rec = USERS[u];
+  const u=el('loginUser').value.trim();
+  const p=el('loginPass').value;
+  const rec=USERS[u];
 
-  if (!rec || rec.password !== p) {
+  if(!rec || rec.password!==p){
     alert("Invalid login");
     return;
   }
 
-  currentUser = { username: u, role: rec.role };
+  currentUser={username:u,role:rec.role};
   localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
 
   el('loginBox').classList.add('hidden');
   el('app').classList.remove('hidden');
-  el('userInfo').textContent = `${u} (${rec.role})`;
+  el('userInfo').textContent=`${u} (${rec.role})`;
+  // ADMIN-ONLY UI
+if (rec.role === "admin") {
+  el('btnClearInventory').classList.remove('hidden');
+} else {
+  el('btnClearInventory').classList.add('hidden');
+}
 
-  if (rec.role === "admin") {
-    el('btnClearInventory').classList.remove('hidden');
-  } else {
-    el('btnClearInventory').classList.add('hidden');
-  }
 
   loadLogs();
   loadInv();
@@ -690,6 +604,19 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
