@@ -168,7 +168,6 @@
    CONSTANTS
 ========================================================== */
 const FIELDS = ['Brand','Model Number','Serial Number','Date Received','Location','Tracking Number','Remarks'];
-const USER_KEY='linksys_current_user';
 
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyQMK6uKZ2HFz5IReZWeQPzyMIS37agBBhOCcrwaN39U5vnOLYAFC05FrwuUuc6mrpxeQ/exec"; // <-- paste new WebApp URL here
 
@@ -201,6 +200,17 @@ function updateRoleUI(role) {
 /* ==========================================================
    GOOGLE SYNC (CORS-SAFE)
 ========================================================== */
+async function loadInventoryFromSheet() {
+  try {
+    const res = await fetch(SHEET_URL);
+    inventory = await res.json();
+    buildTable();
+  } catch (err) {
+    alert("Failed to load inventory from Google Sheets");
+    console.error(err);
+  }
+}
+
 async function syncInventory(record){
   try {
     await fetch(SHEET_URL, {
@@ -230,8 +240,12 @@ async function syncActivityLog(entry){
 /* ==========================================================
    ACTIVITY LOGGING
 ========================================================== */
-function loadLogs(){ activityLog = JSON.parse(localStorage.getItem(LOG_KEY)||"[]"); }
-function saveLogs(){ localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); }
+function loadLogs(){
+  // localStorage removed
+}
+function saveLogs(){
+  // localStorage removed
+}
 
 function logAction(action, serial="") {
   if (!currentUser) return;
@@ -276,7 +290,9 @@ function buildActivity(){
 /* ==========================================================
    INVENTORY SYSTEM
 ========================================================== */
-function saveInv(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
+function saveInv(){
+  // localStorage removed
+}
 function clearInventory(){
   if (!currentUser || currentUser.role !== "admin") {
     alert("Access denied. Admin only.");
@@ -286,16 +302,13 @@ function clearInventory(){
   if (!confirm("Clear inventory from THIS browser only?")) return;
 
   inventory = [];
-  localStorage.removeItem(STORAGE_KEY);
   buildTable();
 
   logAction("cleared inventory (admin only)");
 }
 
-
 function loadInv(){
-  inventory = JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
-  buildTable();
+  // inventory will be loaded from Google Sheets later
 }
 
 function buildTable(){
@@ -352,13 +365,11 @@ function clearForm(){
 }
 
 function addItem(){
-  const it=capture();
+  const it = capture();
   if(!it.Brand){ alert("Brand required"); return; }
 
   inventory.unshift(it);
-  saveInv();
   buildTable();
-  clearForm();
 
   logAction("added item", it['Serial Number']);
   syncInventory(it);
@@ -474,7 +485,6 @@ function login(){
   }
 
   currentUser={username:u,role:rec.role};
-  localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
 
   el('loginBox').classList.add('hidden');
   el('app').classList.remove('hidden');
@@ -489,7 +499,7 @@ if (rec.role === "admin") {
 
 
   loadLogs();
-  loadInv();
+  loadInventoryFromSheet();
   buildActivity();
 
   logAction("logged in");
@@ -497,7 +507,6 @@ if (rec.role === "admin") {
 
 function logout(){
   logAction("logged out");
-  localStorage.removeItem(USER_KEY);
   location.reload();
 }
 
@@ -523,28 +532,6 @@ el('btnShowPass').onclick = () => {
     el('btnShowPass').textContent = "Show Password";
   }
 };
-
-  try{
-    const u=JSON.parse(localStorage.getItem(USER_KEY));
-    if(u){
-      currentUser=u;
-      el('loginBox').classList.add('hidden');
-      el('app').classList.remove('hidden');
-      el('userInfo').textContent=`${u.username} (${u.role})`;
-      updateRoleUI(u.role);
-
-      // ADMIN-ONLY UI (after refresh)
-if (u.role === "admin") {
-  el('btnClearInventory').classList.remove('hidden');
-} else {
-  el('btnClearInventory').classList.add('hidden');
-}
-
-      loadLogs();
-      loadInv();
-      buildActivity();
-    }
-  }catch{}
 
   el('btnLogin').onclick = login;
   // Enable pressing Enter to login
@@ -614,6 +601,7 @@ if (u.role === "admin") {
 
 </body>
 </html>
+
 
 
 
