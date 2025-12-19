@@ -184,6 +184,22 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 /* ==========================================================
    HELPERS
 ========================================================== */
+function formatDateMMDDYYYY(value) {
+  if (!value) return "";
+
+  // If already MM/DD/YYYY, keep it
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
+
+  const d = new Date(value);
+  if (isNaN(d)) return value;
+
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getFullYear();
+
+  return `${mm}/${dd}/${yyyy}`;
+}
+
 function el(id){return document.getElementById(id);}
 function now(){return new Date().toLocaleString();}
 function dateStamp(){return new Date().toLocaleDateString().replace(/\//g,'-');}
@@ -327,7 +343,11 @@ function buildTable(){
     tr.onclick=()=>loadToForm(i);
     FIELDS.forEach(f=>{
       const td=document.createElement("td");
-      td.textContent=it[f] || "";
+      td.textContent =
+  f === "Date Received"
+    ? formatDateMMDDYYYY(it[f])
+    : (it[f] || "");
+
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -340,7 +360,7 @@ function loadToForm(i){
   el('fBrand').value = it['Brand'];
   el('fModel').value = it['Model Number'];
   el('fSerial').value = it['Serial Number'];
-  el('fDate').value = it['Date Received'];
+  el('fDate').value = formatDateMMDDYYYY(it['Date Received']);
   el('fLocation').value = it['Location'];
   el('fTracking').value = it['Tracking Number'];
   el('fRemarks').value = it['Remarks'];
@@ -601,6 +621,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
