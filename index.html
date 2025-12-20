@@ -337,7 +337,7 @@ function clearInventory(){
     return;
   }
 
-  if (!confirm("Clear inventory from THIS browser only?")) return;
+  if (!confirm("Are you sure you want to clear the inventory?")) return;
 
   inventory = [];
   buildTable();
@@ -652,4 +652,5 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
