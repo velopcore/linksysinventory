@@ -530,6 +530,7 @@ function login(){
   }
 
   currentUser = { username: u, role: rec.role };
+  sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
 
   // Show app
   el('loginBox').classList.add('hidden');
@@ -558,6 +559,7 @@ function login(){
 
 function logout(){
   logAction("logged out");
+  sessionStorage.removeItem("currentUser");
   location.reload();
 }
 
@@ -565,6 +567,28 @@ function logout(){
    INIT
 ========================================================== */
 document.addEventListener('DOMContentLoaded',()=>{
+const savedUser = sessionStorage.getItem("currentUser");
+
+if (savedUser) {
+  currentUser = JSON.parse(savedUser);
+
+  el('loginBox').classList.add('hidden');
+  el('app').classList.remove('hidden');
+  el('userInfo').textContent =
+    `${currentUser.username} (${currentUser.role})`;
+
+  updateRoleUI(currentUser.role);
+  updateViewerUI(currentUser.role);
+
+  if (currentUser.role === "admin") {
+    el('btnClearInventory').classList.remove('hidden');
+  } else {
+    el('btnClearInventory').classList.add('hidden');
+  }
+
+  loadInventoryFromSheet();
+  buildActivity();
+}
 
 // AUTO CAPS FOR ITEM DETAILS
 document.querySelectorAll('.upper').forEach(input => {
@@ -652,5 +676,6 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
