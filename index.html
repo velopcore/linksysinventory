@@ -212,6 +212,28 @@ function updateRoleUI(role) {
     logBox.classList.add('hidden');
   }
 }
+function updateViewerUI(role) {
+  const leftPanel = document.querySelector('.left');
+  const rightPanel = document.querySelector('.right');
+  const activityLog = el('activityLogBox');
+  const clearInventoryBtn = el('btnClearInventory');
+  const downloadTemplateBtn = el('btnDownloadTemplate');
+
+  if (role === 'viewer') {
+    leftPanel.classList.add('hidden');
+
+    rightPanel.querySelectorAll('button, input, hr, label')
+      .forEach(elm => elm.classList.add('hidden'));
+
+    el('searchBox').classList.remove('hidden');
+    el('btnSearch').classList.remove('hidden');
+    el('btnClearSearch').classList.remove('hidden');
+
+    activityLog.classList.add('hidden');
+    clearInventoryBtn.classList.add('hidden');
+    downloadTemplateBtn.classList.add('hidden');
+  }
+}
 
 /* ==========================================================
    GOOGLE SYNC (CORS-SAFE)
@@ -340,7 +362,10 @@ function buildTable(){
   limitedItems.forEach((it,i)=>{
     const tr=document.createElement("tr");
     tr.classList.add("clickable");
-    tr.onclick=()=>loadToForm(i);
+    if (currentUser && currentUser.role !== 'viewer') {
+  tr.onclick = () => loadToForm(i);
+}
+
     FIELDS.forEach(f=>{
       const td=document.createElement("td");
       td.textContent =
@@ -495,35 +520,41 @@ function exportLogs(){
    LOGIN SYSTEM
 ========================================================== */
 function login(){
-  const u=el('loginUser').value.trim();
-  const p=el('loginPass').value;
-  const rec=USERS[u];
+  const u = el('loginUser').value.trim();
+  const p = el('loginPass').value;
+  const rec = USERS[u];
 
-  if(!rec || rec.password!==p){
+  if (!rec || rec.password !== p) {
     alert("Invalid login");
     return;
   }
 
-  currentUser={username:u,role:rec.role};
+  currentUser = { username: u, role: rec.role };
 
+  // Show app
   el('loginBox').classList.add('hidden');
   el('app').classList.remove('hidden');
-  el('userInfo').textContent=`${u} (${rec.role})`;
+  el('userInfo').textContent = `${u} (${rec.role})`;
+
+  // Role-based UI
   updateRoleUI(rec.role);
-  // ADMIN-ONLY UI
-if (rec.role === "admin") {
-  el('btnClearInventory').classList.remove('hidden');
-} else {
-  el('btnClearInventory').classList.add('hidden');
-}
+  updateViewerUI(rec.role);
 
+  // Admin-only button
+  if (rec.role === "admin") {
+    el('btnClearInventory').classList.remove('hidden');
+  } else {
+    el('btnClearInventory').classList.add('hidden');
+  }
 
+  // Load data
   loadLogs();
   loadInventoryFromSheet();
   buildActivity();
 
   logAction("logged in");
 }
+
 
 function logout(){
   logAction("logged out");
@@ -621,10 +652,4 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
-
-
-
-
-
-
 
