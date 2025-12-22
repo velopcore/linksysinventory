@@ -226,7 +226,7 @@ async function loadInventoryFromSheet() {
     inventory = await res.json();
     buildTable();
   } catch (err) {
-    alert("Failed to load inventory from Google Sheets");
+    alert("Failed to load inventory");
     console.error(err);
   }
 }
@@ -674,6 +674,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
