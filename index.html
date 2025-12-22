@@ -184,6 +184,10 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 /* ==========================================================
    HELPERS
 ========================================================== */
+function toUpperSafe(value) {
+  return value ? String(value).toUpperCase() : "";
+}
+
 function formatDateMMDDYYYY(value) {
   if (!value) return "";
 
@@ -349,7 +353,7 @@ function buildTable(){
       td.textContent =
   f === "Date Received"
     ? formatDateMMDDYYYY(it[f])
-    : (it[f] || "");
+    : toUpperSafe(it[f]);
 
       tr.appendChild(td);
     });
@@ -638,9 +642,10 @@ el('btnShowPass').onclick = () => {
     FIELDS.forEach(f => {
       const td = document.createElement("td");
       td.textContent =
-        f === "Date Received"
-          ? formatDateMMDDYYYY(item[f])
-          : (item[f] || "");
+  f === "Date Received"
+    ? formatDateMMDDYYYY(item[f])
+    : toUpperSafe(item[f]);
+
       tr.appendChild(td);
     });
 
@@ -669,6 +674,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
