@@ -615,19 +615,25 @@ el('btnShowPass').onclick = () => {
     return;
   }
 
-  const filtered = inventory.filter(row =>
-    FIELDS.some(field =>
-      String(row[field] ?? "")
-        .toLowerCase()
-        .includes(q)
-    )
-  );
-
   const tbody = el("tbodyRows");
   tbody.innerHTML = "";
 
-  filtered.forEach(item => {
+  inventory.forEach((item, index) => {
+    const match = FIELDS.some(field =>
+      String(item[field] ?? "")
+        .toLowerCase()
+        .includes(q)
+    );
+
+    if (!match) return;
+
     const tr = document.createElement("tr");
+    tr.classList.add("clickable");
+
+    // ✅ IMPORTANT: attach correct index
+    if (currentUser && currentUser.role !== "viewer") {
+      tr.onclick = () => loadToForm(index);
+    }
 
     FIELDS.forEach(f => {
       const td = document.createElement("td");
@@ -663,6 +669,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
