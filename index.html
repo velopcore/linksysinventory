@@ -315,7 +315,7 @@ function clearInventory(){
     return;
   }
 
-  if (!confirm("Clear inventory from THIS browser only?")) return;
+  if (!confirm("Are you sure you want to clear the inventory? This action cannot be undone.")) return;
 
   inventory = [];
   buildTable();
@@ -340,7 +340,10 @@ function buildTable(){
   limitedItems.forEach((it,i)=>{
     const tr=document.createElement("tr");
     tr.classList.add("clickable");
-    tr.onclick=()=>loadToForm(i);
+    if (currentUser && currentUser.role !== "viewer") {
+  tr.onclick = () => loadToForm(i);
+}
+
     FIELDS.forEach(f=>{
       const td=document.createElement("td");
       td.textContent =
@@ -637,6 +640,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
