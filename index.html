@@ -635,21 +635,37 @@ el('btnShowPass').onclick = () => {
 
   el('btnExport').onclick = exportInventoryCSV;
   el('btnDownloadTemplate').onclick = downloadCSVTemplate;
-
   el('btnSearch').onclick = () => {
   const q = el('searchBox').value.toLowerCase().trim();
   if (!q) return buildTable();
 
   const filtered = inventory.filter(row =>
-    FIELDS.some(field => {
-      const value = row[field];
-
-      // Convert everything to text safely
-      return String(value ?? "")
+    FIELDS.some(field =>
+      String(row[field] ?? "")
         .toLowerCase()
-        .includes(q);
-    })
+        .includes(q)
+    )
   );
+
+  const tbody = el("tbodyRows");
+  tbody.innerHTML = "";
+
+  filtered.forEach(item => {
+    const tr = document.createElement("tr");
+
+    FIELDS.forEach(f => {
+      const td = document.createElement("td");
+      td.textContent =
+        f === "Date Received"
+          ? formatDateMMDDYYYY(item[f])
+          : (item[f] || "");
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+};
+
 
   const tbody = el("tbodyRows");
   tbody.innerHTML = "";
@@ -704,6 +720,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
