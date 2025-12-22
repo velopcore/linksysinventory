@@ -362,15 +362,16 @@ function buildTable(){
 }
 
 function loadToForm(i){
-  selectedIndex=i;
-  const it=inventory[i];
-  el('fBrand').value = it['Brand'];
-  el('fModel').value = it['Model Number'];
-  el('fSerial').value = it['Serial Number'];
-  el('fDate').value = formatDateMMDDYYYY(it['Date Received']);
-  el('fLocation').value = it['Location'];
-  el('fTracking').value = it['Tracking Number'];
-  el('fRemarks').value = it['Remarks'];
+  selectedIndex = i;
+  const it = inventory[i];
+
+  el('fBrand').value     = toUpperSafe(it['Brand']);
+  el('fModel').value     = toUpperSafe(it['Model Number']);
+  el('fSerial').value    = toUpperSafe(it['Serial Number']);
+  el('fDate').value      = formatDateMMDDYYYY(it['Date Received']);
+  el('fLocation').value  = toUpperSafe(it['Location']);
+  el('fTracking').value  = toUpperSafe(it['Tracking Number']);
+  el('fRemarks').value   = toUpperSafe(it['Remarks']);
 }
 
 function capture(){
@@ -674,6 +675,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
