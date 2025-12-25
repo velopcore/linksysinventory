@@ -253,6 +253,7 @@ async function loadInventoryFromSheet() {
     const res = await fetch(SHEET_URL);
     const data = await res.json();
 
+    // ✅ SORT BY DATE RECEIVED (LATEST FIRST)
     inventory = data.sort((a, b) =>
       parseMMDDYYYY(b['Date Received']) -
       parseMMDDYYYY(a['Date Received'])
@@ -264,6 +265,7 @@ async function loadInventoryFromSheet() {
     console.error(err);
   }
 }
+
 
 
 async function syncInventory(record){
@@ -719,6 +721,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
