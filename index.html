@@ -184,31 +184,6 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 /* ==========================================================
    HELPERS
 ========================================================== */
-function updateViewerUI(role) {
-  if (role !== "viewer") return;
-
-  // Hide Item Details
-  document.querySelector('.left').classList.add('hidden');
-
-  // Hide edit & import/export controls
-  el('btnAdd').classList.add('hidden');
-  el('btnSave').classList.add('hidden');
-  el('btnClearForm').classList.add('hidden');
-
-  el('fileImport').classList.add('hidden');
-  el('btnImport').classList.add('hidden');
-  el('btnExport').classList.add('hidden');
-  el('btnDownloadTemplate').classList.add('hidden');
-
-  // Hide Activity Log
-  el('activityLogBox').classList.add('hidden');
-
-  // Hide Clear Inventory
-  el('btnClearInventory').classList.add('hidden');
-
-  // Search stays visible
-}
-
 function toUpperSafe(value) {
   return value ? String(value).toUpperCase() : "";
 }
@@ -544,7 +519,6 @@ function login(){
   el('app').classList.remove('hidden');
   el('userInfo').textContent=`${u} (${rec.role})`;
   updateRoleUI(rec.role);
-  updateViewerUI(rec.role);
   // ADMIN-ONLY UI
 if (rec.role === "admin") {
   el('btnClearInventory').classList.remove('hidden');
@@ -581,7 +555,6 @@ if (savedUser) {
     `${currentUser.username} (${currentUser.role})`;
 
   updateRoleUI(currentUser.role);
-  updateViewerUI(currentUser.role);
 
   if (currentUser.role === "admin") {
     el('btnClearInventory').classList.remove('hidden');
@@ -702,4 +675,3 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
-
