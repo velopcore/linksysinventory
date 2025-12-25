@@ -190,6 +190,12 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 /* ==========================================================
    HELPERS
 ========================================================== */
+function parseMMDDYYYY(dateStr) {
+  if (!dateStr) return 0;
+  const [mm, dd, yyyy] = dateStr.split('/');
+  return new Date(yyyy, mm - 1, dd).getTime();
+}
+
 function applyRoleUI(role) {
   const itemBox = el('itemDetailsBox');
   const actionBox = el('actionsBox');
@@ -245,13 +251,20 @@ function updateRoleUI(role) {
 async function loadInventoryFromSheet() {
   try {
     const res = await fetch(SHEET_URL);
-    inventory = await res.json();
+    const data = await res.json();
+
+    inventory = data.sort((a, b) =>
+      parseMMDDYYYY(b['Date Received']) -
+      parseMMDDYYYY(a['Date Received'])
+    );
+
     buildTable();
   } catch (err) {
     alert("Failed to load inventory");
     console.error(err);
   }
 }
+
 
 async function syncInventory(record){
   try {
@@ -418,7 +431,13 @@ function addItem(){
   const it = capture();
   if(!it.Brand){ alert("Brand required"); return; }
 
-  inventory.unshift(it);
+  inventory.push(it);
+
+inventory.sort((a, b) =>
+  parseMMDDYYYY(b['Date Received']) -
+  parseMMDDYYYY(a['Date Received'])
+);
+
   buildTable();
 
   logAction("added item", it['Serial Number']);
@@ -700,6 +719,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
