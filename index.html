@@ -191,10 +191,20 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
    HELPERS
 ========================================================== */
 function parseMMDDYYYY(dateStr) {
-  if (!dateStr) return 0;
-  const [mm, dd, yyyy] = dateStr.split('/');
+  if (!dateStr || typeof dateStr !== "string") return 0;
+
+  const parts = dateStr.trim().split("/");
+  if (parts.length !== 3) return 0;
+
+  const mm = parseInt(parts[0], 10);
+  const dd = parseInt(parts[1], 10);
+  const yyyy = parseInt(parts[2], 10);
+
+  if (!mm || !dd || !yyyy) return 0;
+
   return new Date(yyyy, mm - 1, dd).getTime();
 }
+
 
 function applyRoleUI(role) {
   const itemBox = el('itemDetailsBox');
@@ -253,13 +263,14 @@ async function loadInventoryFromSheet() {
     const res = await fetch(SHEET_URL);
     const data = await res.json();
 
-    // ✅ SORT BY DATE RECEIVED (LATEST FIRST)
-    inventory = data.sort((a, b) =>
-      parseMMDDYYYY(b['Date Received']) -
-      parseMMDDYYYY(a['Date Received'])
-    );
+// ✅ SORT BY DATE RECEIVED (NEWEST FIRST)
+inventory = data.sort((a, b) =>
+  parseMMDDYYYY(b['Date Received']) -
+  parseMMDDYYYY(a['Date Received'])
+);
 
-    buildTable();
+buildTable();
+
   } catch (err) {
     alert("Failed to load inventory");
     console.error(err);
@@ -721,6 +732,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
