@@ -210,6 +210,30 @@ function updateViewerUI(role) {
   el('btnClearSearch').classList.remove('hidden');
 }
 
+function updateViewerUI(role) {
+  if (role !== "viewer") return;
+
+  // Hide Item Details (left)
+  document.querySelector('.left').classList.add('hidden');
+
+  // Hide Import / Export section
+  el('fileImport').classList.add('hidden');
+  el('btnImport').classList.add('hidden');
+  el('btnExport').classList.add('hidden');
+  el('btnDownloadTemplate').classList.add('hidden');
+
+  // Hide Activity Log
+  el('activityLogBox').classList.add('hidden');
+
+  // Hide Clear Inventory
+  el('btnClearInventory').classList.add('hidden');
+
+  // Keep search visible
+  el('searchBox').classList.remove('hidden');
+  el('btnSearch').classList.remove('hidden');
+  el('btnClearSearch').classList.remove('hidden');
+}
+
 function toUpperSafe(value) {
   return value ? String(value).toUpperCase() : "";
 }
@@ -703,6 +727,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
