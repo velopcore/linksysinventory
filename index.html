@@ -187,19 +187,24 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 function updateViewerUI(role) {
   if (role !== "viewer") return;
 
-  // 1. Hide Item Details panel (LEFT)
+  // Hide Item Details panel (LEFT)
   document.querySelector('.left').classList.add('hidden');
 
-  // 2. Hide Actions panel (RIGHT)
-  document.querySelector('.right').classList.add('hidden');
+  // Hide edit/action buttons ONLY (not the whole right panel)
+  el('btnAdd').classList.add('hidden');
+  el('btnSave').classList.add('hidden');
+  el('fileImport').classList.add('hidden');
+  el('btnImport').classList.add('hidden');
+  el('btnExport').classList.add('hidden');
+  el('btnDownloadTemplate').classList.add('hidden');
 
-  // 3. Hide Activity Log
+  // Hide Activity Log
   el('activityLogBox').classList.add('hidden');
 
-  // 4. Hide Clear Inventory button
+  // Hide Clear Inventory
   el('btnClearInventory').classList.add('hidden');
 
-  // 5. Make sure SEARCH controls are visible
+  // ✅ Ensure search controls are visible
   el('searchBox').classList.remove('hidden');
   el('btnSearch').classList.remove('hidden');
   el('btnClearSearch').classList.remove('hidden');
@@ -698,6 +703,7 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
 
 
 
