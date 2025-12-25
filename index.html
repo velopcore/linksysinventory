@@ -89,7 +89,7 @@
 
   <div class="container">
     <!-- LEFT: ITEM FORM -->
-    <div class="left">
+    <div class="left" id="itemDetailsBox">
       <h3>🧾 Item Details</h3>
       <label>Brand</label><input type="text" id="fBrand" class="upper">
       <label>Model Number</label><input type="text" id="fModel" class="upper">
@@ -102,7 +102,7 @@
     </div>
 
     <!-- RIGHT: ACTION PANEL -->
-    <div class="right">
+    <div class="right" id="actionsBox">
       <h3>⚙️ Actions</h3>
       <button id="btnAdd" class="primary">Add Item</button>
       <button id="btnSave">Save Changes</button>
@@ -184,6 +184,21 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 /* ==========================================================
    HELPERS
 ========================================================== */
+function applyRoleUI(role) {
+  const itemBox = el('itemDetailsBox');
+  const actionBox = el('actionsBox');
+
+  if (!itemBox || !actionBox) return;
+
+  if (role === 'viewer') {
+    itemBox.classList.add('hidden');
+    actionBox.classList.add('hidden');
+  } else {
+    itemBox.classList.remove('hidden');
+    actionBox.classList.remove('hidden');
+  }
+}
+  
 function toUpperSafe(value) {
   return value ? String(value).toUpperCase() : "";
 }
@@ -519,6 +534,8 @@ function login(){
   el('app').classList.remove('hidden');
   el('userInfo').textContent=`${u} (${rec.role})`;
   updateRoleUI(rec.role);
+  applyRoleUI(rec.role);
+
   // ADMIN-ONLY UI
 if (rec.role === "admin") {
   el('btnClearInventory').classList.remove('hidden');
@@ -555,6 +572,7 @@ if (savedUser) {
     `${currentUser.username} (${currentUser.role})`;
 
   updateRoleUI(currentUser.role);
+  applyRoleUI(currentUser.role);
 
   if (currentUser.role === "admin") {
     el('btnClearInventory').classList.remove('hidden');
@@ -675,3 +693,4 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
