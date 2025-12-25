@@ -89,7 +89,7 @@
 
   <div class="container">
     <!-- LEFT: ITEM FORM -->
-    <div class="left" id="itemDetailsBox">
+    <div class="left">
       <h3>🧾 Item Details</h3>
       <label>Brand</label><input type="text" id="fBrand" class="upper">
       <label>Model Number</label><input type="text" id="fModel" class="upper">
@@ -102,11 +102,7 @@
     </div>
 
     <!-- RIGHT: ACTION PANEL -->
-    <div class="right" id="actionsBox">
-    if (role === 'viewer') {
-  actionBox.classList.add('hidden');
-}
-
+    <div class="right">
       <h3>⚙️ Actions</h3>
       <button id="btnAdd" class="primary">Add Item</button>
       <button id="btnSave">Save Changes</button>
@@ -118,17 +114,17 @@
         <button id="btnExport">Export</button>
       </div>
       <hr>
-      
-      <button id="btnDownloadTemplate">Download CSV Template</button>
-      <div id="actionMsg" class="msg hidden"></div>
-    </div>
-  </div>
-  <label>Search</label>
+      <label>Search</label>
       <input type="text" id="searchBox">
       <div style="display:flex;gap:8px;">
         <button id="btnSearch">Search</button>
         <button id="btnClearSearch">Clear Search</button>
       </div>
+      <button id="btnDownloadTemplate">Download CSV Template</button>
+      <div id="actionMsg" class="msg hidden"></div>
+    </div>
+  </div>
+
   <!-- INVENTORY TABLE -->
   <div class="bottom">
     <h3>📋 Inventory Table</h3>
@@ -188,22 +184,6 @@ let inventory=[], activityLog=[], currentUser=null, selectedIndex=-1;
 /* ==========================================================
    HELPERS
 ========================================================== */
-function applyRoleUI(role) {
-  const itemBox = el('itemDetailsBox');
-  const actionBox = el('actionsBox');
-  const searchBox = el('searchBoxOnly');
-
-  if (role === 'viewer') {
-    itemBox.classList.add('hidden');
-    actionBox.classList.add('hidden');
-    searchBox.classList.remove('hidden');
-  } else {
-    itemBox.classList.remove('hidden');
-    actionBox.classList.remove('hidden');
-    searchBox.classList.remove('hidden');
-  }
-}
-  
 function toUpperSafe(value) {
   return value ? String(value).toUpperCase() : "";
 }
@@ -539,8 +519,6 @@ function login(){
   el('app').classList.remove('hidden');
   el('userInfo').textContent=`${u} (${rec.role})`;
   updateRoleUI(rec.role);
-  applyRoleUI(rec.role);
-
   // ADMIN-ONLY UI
 if (rec.role === "admin") {
   el('btnClearInventory').classList.remove('hidden');
@@ -577,7 +555,6 @@ if (savedUser) {
     `${currentUser.username} (${currentUser.role})`;
 
   updateRoleUI(currentUser.role);
-  applyRoleUI(currentUser.role);
 
   if (currentUser.role === "admin") {
     el('btnClearInventory').classList.remove('hidden');
@@ -698,5 +675,15 @@ el('btnShowPass').onclick = () => {
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
 
 
